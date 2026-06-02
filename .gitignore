@@ -1,0 +1,10 @@
+node_modules
+.next
+out
+.runtime-cache
+.env*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+football-logos-main
+football-logos-master

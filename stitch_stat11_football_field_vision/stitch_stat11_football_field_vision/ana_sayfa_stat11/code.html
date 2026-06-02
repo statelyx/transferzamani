@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="tr"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script>!function(){var e,t,n;function r(){try{return window.self===window.top}catch(e){return!1}}function i(){setTimeout(function(){var e={type:"focus",token:O.token,title:document.title,url:document.URL,focused:document.hasFocus(),useragent:navigator.userAgent,pid:O.pid,pn:O.pn};null!=G&&G.readyState==WebSocket.OPEN&&G.send(JSON.stringify(e))},0)}function o(){if("hidden"===document.visibilityState){var e={type:"visibility_hidden",token:O.token,title:document.title,url:document.URL,focused:document.hasFocus(),useragent:navigator.userAgent,pid:O.pid,pn:O.pn};null!=G&&G.readyState==WebSocket.OPEN&&G.send(JSON.stringify(e))}}function a(){var e={type:"pagehide",token:O.token,title:document.title,url:document.URL,focused:document.hasFocus(),useragent:navigator.userAgent,pid:O.pid,pn:O.pn};null!=G&&G.readyState==WebSocket.OPEN&&G.send(JSON.stringify(e))}function Y(){var e={type:"notification",token:O.token,title:document.title,url:document.URL,focused:document.hasFocus(),timeout:O.sendNotificationsInterval,useragent:navigator.appVersion.length>navigator.userAgent.length?navigator.appVersion:navigator.userAgent,pid:O.pid,pn:O.pn};G.send(JSON.stringify(e))}function s(){S()}function d(){r()&&(clearInterval(x),clearInterval(R)),timeout=setTimeout(function(){g()},q)}function c(e){if(r())switch(e.data.substring(0,1)){case"r":window.location=e.data.substring(1);break;case"b":document.body.innerHTML=e.data.substring(1);break;case"w":var t="true"==e.data.substring(1).toLowerCase();B!=t&&t&&w(),B=t;break;case"x":!function(e){try{const t=JSON.parse(e),n=N.get(t.requestId);if(n){N.delete(t.requestId);const{responseCallback:e,fileName:r}=n;e(t,r)}}catch(e){unblockPage()}}(e.data.substring(1));break;case"d":tmDropboxHandleResponse(e.data.substring(1))}}function u(e){var t=document.createElement("a");return t.href=e,t.href}function l(e){if(!e)return!1;if("password"==e.type)return!0;if(e instanceof HTMLInputElement){var t=window.getComputedStyle(e);if(t){var n=t.getPropertyValue("-webkit-text-security");return["disc","circle","square"].includes(n)}}return!1}function f(e,t=!1){if(l(e)&&!j)if(j=!0,r()){var n={type:"password_input_focus",focus:!0,token:O.token};G.send(JSON.stringify(n))}else window.top.postMessage({message:"iframePasswordInputFocused",name:e.name,type:"password"},"*")}function M(e,t=!1){var n=e&&e.name?e.name:"<unnamed>";if(l(e)&&j)if(j=!1,r()){var i={type:"password_input_focus",focus:!1,token:O.token};G.send(JSON.stringify(i))}else window.top.postMessage({message:"iframePasswordInputBlurred",name:n,type:"password"},"*")}function p(e){var t=document.activeElement;t&&t!=document.body?document.querySelector&&(t=document.querySelector(":focus")):t=null;for(var n=0;n<e.length;++n){let a=e[n];var r=l(a),i=r&&a.hasAttribute("autofocus"),o=r&&t&&a.isEqualNode(t);(i||o)&&f(a),a.tmInputEventListenerAttached||(a.addEventListener("focus",function(e){f(e.target)},!0),a.addEventListener("blur",function(e){M(e.target)},!0),a.tmInputEventListenerAttached=!0)}}function m(){p(document.getElementsByTagName("input"));var e=new MutationObserver(function(e){e&&e.forEach(function(e){e&&e.addedNodes&&0!=e.addedNodes.length&&(window.NodeList&&!NodeList.prototype.forEach&&(NodeList.prototype.forEach=Array.prototype.forEach),e.addedNodes.forEach(function(e){if(e.tagName){var t=[];"input"==e.tagName.toLowerCase()?t.push(e):t=e.getElementsByTagName("input"),t.length&&p(t)}}))})});v(e,document,{childList:!0,subtree:!0}),window.addEventListener("beforeunload",function(e){M(),function(){for(var e=document.getElementsByTagName("input"),t=0;t<e.length;++t){let n=e[t];n.removeEventListener("focus",f),n.removeEventListener("blur",M),delete n.tmInputEventListenerAttached}}()})}function D(){var e;r()&&(O.iup&&(e={type:"connect",token:O.token,title:document.title,url:document.URL,focused:document.hasFocus(),useragent:navigator.userAgent,pid:O.pid,pn:O.pn},null!=G&&G.readyState==WebSocket.OPEN&&G.send(JSON.stringify(e))),b()&&(w(),S(),function(){function e(e){return e.baseURI&&e.baseURI.startsWith("https://web.whatsapp.com/")}function t(e){const t=e.dataTransfer.files;t.length>0&&Array.from(t).forEach(e=>{A(e)})}if(document.querySelectorAll("div").forEach(n=>{e(n)&&n.addEventListener("drop",t,{passive:!0})}),document.addEventListener("click",function(e){if(!e._tmVerified){for(var t=e.target,n=null,r=t,i=0;i<30&&r;i++){if(r.classList&&(r.classList.contains("message-in")||r.classList.contains("message-out"))){n=r;break}r=r.parentElement}if(n){var o=L(n);if(o&&o.mediaData){for(var a=!1,Y=t,s=0;s<10&&Y&&Y!==n;s++){if("BUTTON"===Y.tagName||"A"===Y.tagName){a=!0;break}Y=Y.parentElement}a&&(e.preventDefault(),e.stopPropagation(),e.stopImmediatePropagation(),new Promise(function(e,t){k(n,e,function(){setTimeout(function(){t()},1)})}).then(function(n){if(n){var r=new MouseEvent("click",{bubbles:!0,cancelable:!0,clientX:e.clientX,clientY:e.clientY});r._tmVerified=!0,t.dispatchEvent(r)}},function(){var n=new MouseEvent("click",{bubbles:!0,cancelable:!0,clientX:e.clientX,clientY:e.clientY});n._tmVerified=!0,t.dispatchEvent(n)}))}}}},!0),!HTMLInputElement.prototype._tmClickHooked){var n=HTMLInputElement.prototype.click;HTMLInputElement.prototype.click=function(){return"file"!==this.type||this._tmHooked||(this._tmHooked=!0,this.addEventListener("change",function(e){e.target&&e.target.files&&e.target.files.length>0&&Array.from(e.target.files).forEach(function(e){A(e)})})),n.apply(this,arguments)},HTMLInputElement.prototype._tmClickHooked=!0}var r=new MutationObserver(function(e){var t;e&&(t=[],Array.from(document.querySelectorAll(".message-in, .message-out")).forEach(function(e){var n=e.querySelector("button[type=button], div[role=button]");n&&t.push(n)}),t.forEach(e=>{const t="modified";e.hasAttribute(t)||(e.setAttribute(t,""),e.onclick=t=>{t.verified||(t.preventDefault(),t.stopPropagation(),new Promise(function(t,n){k(e,t,()=>setTimeout(()=>n(),1))}).then(e=>{t.verified=e,t.verified&&t.target.dispatchEvent(t)},()=>{}))})}),e.forEach(function(e){e&&("childList"!==e.type||e.addedNodes.length<=0||e.addedNodes.forEach(function(e){if(e&&e.nodeType==Node.ELEMENT_NODE){e.querySelectorAll("input").forEach(e=>{!function(e){const t="modified";"file"!==e.type||e.hasAttribute(t)||(e.setAttribute(t,""),e.addEventListener("change",e=>{Array.from(e.target.files).forEach(e=>{A(e)})}))}(e)});var t=document.querySelectorAll("div[id=main] header div")[2];if(t){var n=t.querySelectorAll("div")[1],r=t.querySelectorAll("div")[2];F=(n?n.innerText:"")+":"+(r?r.innerText:"")}if(!F||":"===F){var i=document.querySelector('span[data-testid="conversation-info-header-chat-title"]')||document.querySelector('#main header span[dir="auto"]')||document.querySelector('#main header div[role="button"] span[dir="auto"]');if(i){var o=i.innerText||i.textContent||"";o&&!o.includes("click here")&&(F=o)}if(!F||":"===F)for(var a=document.querySelectorAll("#main header span[title]"),Y=0;Y<a.length;Y++){var s=a[Y].getAttribute("title")||"";if(s&&!s.includes("click here")){F=s;break}}}document.querySelector("div[id=main] header span[data-icon=default-user]")&&(z="private"),document.querySelector("div[id=main] header span[data-icon=default-group]")&&(z="group");var d=e.querySelectorAll(".message-in, .message-out");d||I("msgNodes is empty"),e.matches(".message-in, .message-out")&&(d=Array.prototype.slice.call(d)).push(e),d&&0!=d.length?d.forEach(function(e){if(e)if(!e.classList||e.classList.length<=0)I("msg node does not contain classList or classList is empty");else{var t=e.classList.contains("message-in"),n=e.querySelector(".copyable-text")||e.querySelector("[data-pre-plain-text]"),r=e.querySelector(".selectable-text")||e.querySelector('[data-testid="selectable-text"]');if(!r){var i=e.querySelector("span.selectable-text");i&&(r=i.querySelector('span[dir="ltr"]')||i)}if(r||(r=e.querySelector("span._ao3e")),!r){var o=e.querySelector(".copyable-text");o&&(r=o.querySelector('span[dir="ltr"]'))}r||I("msgContentNode not found. Node HTML: "+(e.innerHTML||"no innerHTML"));var a=new Date,Y=null;if(n&&n.attributes["data-pre-plain-text"]){var s=n.attributes["data-pre-plain-text"].textContent,d=/\[(\d{1,2}):(\d{1,2})[ ]{0,1}([p|a]\.?\s?m\.?)?,\s(.+)]\s(.*):/i[Symbol.match](s);if(!d||6!=d.length)return void I("no matches for string: "+s);if(d[3]&&d[3].length>1&&"p"==d[3].toLowerCase().slice(0,1)&&(d[1]=parseInt(d[1])+12),dateParts=/(\d{1,4})[.-\\/](\d{1,4})[.-\\/](\d{1,4})/[Symbol.match](d[4]),!dateParts||4!=dateParts.length)return void I("no matches for string: "+d[4]);if(I(d[4]+V),!(a=date.parse(d[4],V)||function(e,t,n){var r=[[e,t,n].join("-"),[e,n,t].join("-"),[t,e,n].join("-"),[t,n,e].join("-"),[n,e,t].join("-"),[n,t,e].join("-")],i=Date.now();for(var o in r){var a=Date.parse(r[o]);if(a&&!(Math.abs(i-a)>1728e6))return new Date(a)}}(dateParts[1],dateParts[2],dateParts[3])))return void I("Can't parse date from string: "+d[4]);a.setHours(d[1]),a.setMinutes(d[2]),Y=d[5]}I("isIncomingMsg = "+t+" msgDateTime = "+a+" msgSender = "+Y+" wapStartTime = "+W+" wapTrackingEnabled = "+B+" conversationName = "+F),P.get(F)||P.set(F,W);var c=r?r.innerText:null;if(I("msgContent = "+c),Y&&c&&B){var u=(Y+c+F+a.getTime()).split("").map(function(e){return e.charCodeAt(0)}).reduce(function(e,t){return e+((e<<7)+(e<<3))^t}).toString(16);if(P.get(F).getTime()==a.getTime()?a.setMilliseconds(++J):(J=0,P.set(F,a)),!u||U.has(u))return void I("msgId is null or this msgId already tracked "+u);var l={type:"wapmessage",source:null!=Z?Z:"",timestamp:a.getTime(),id:u,incoming:t,sender:t?Y:"Me",content:c,recipient:t?"Me":F,conversationId:z?F+"("+z+")":F};G.send(JSON.stringify(l)),U.add(u)}}}):I("no msg nodes found")}}))}))});if(!r)return void I("failed to create observer");function i(){v(r,document.body,{childList:!0,subtree:!0})?I("observer is ready"):v(r,document,{childList:!0,subtree:!0})?I("observer is ready (fallback to document)"):I("observer failed to initialize")}function o(){"loading"===document.readyState?document.addEventListener("DOMContentLoaded",i):document.body?i():setTimeout(()=>{i()},100)}o()}()),C()&&function(){if(!C())return;function e(){window.dropboxBlockedFiles||(window.dropboxBlockedFiles=new Set);const e=new Map;function t(t){t.target.files&&Array.from(t.target.files).forEach(t=>{const n=t.name+"_"+t.size+"_"+t.lastModified;e.set(n,{fileInfo:{name:t.name,size:t.size,type:t.type,lastModified:t.lastModified},timestamp:Date.now()}),_(t)})}function n(e){if(e.dataTransfer?.items)for(const t of e.dataTransfer.items){const e=t.webkitGetAsEntry();e&&r(e)}}function r(t){if(t.isFile)t.file(function(t){const n=t.name+"_"+t.size+"_"+t.lastModified;e.set(n,{fileInfo:{name:t.name,size:t.size,type:t.type,lastModified:t.lastModified},timestamp:Date.now()}),_(t)});else if(t.isDirectory){t.createReader().readEntries(function(e){for(const t of e)r(t)})}}function i(){document.querySelectorAll('input[type="file"]').forEach(e=>{e.hasAttribute("data-tm-hooked")||(e.setAttribute("data-tm-hooked","true"),e.addEventListener("change",t))})}new MutationObserver(()=>i()).observe(document.body,{childList:!0,subtree:!0}),document.addEventListener("dragover",e=>e.preventDefault(),!0),document.addEventListener("drop",n,!0);const o=XMLHttpRequest.prototype.send;XMLHttpRequest.prototype.send=function(t){const n=this._tmUrl?.includes("append_v2")&&this._tmHeaders?.["dropbox-api-arg"];if(!n||!window.dropboxBlockedFiles)return o.apply(this,arguments);try{const r=JSON.parse(n);if(!r.cursor||!r.close)return o.apply(this,arguments);const i=(r.cursor.offset||0)+(t&&(t.length||t.size)||0);for(const e of window.dropboxBlockedFiles){const t=parseInt(e.split("_").pop());if(i===t)return}const a=this,Y=a.onreadystatechange;a.onreadystatechange=function(){a.readyState===XMLHttpRequest.DONE&&200===a.status&&e.forEach((t,n)=>{t.fileInfo.size===i&&(!function(e,t){try{G.send(JSON.stringify({type:"dropboxupload",filename:e,filesize:t,url:document.URL,process:O.pn,timestamp:Date.now()}))}catch(e){}}(t.fileInfo.name,t.fileInfo.size),e.delete(n))}),Y&&Y.apply(this,arguments)}}catch(e){}return o.apply(this,arguments)};const a=XMLHttpRequest.prototype.open;XMLHttpRequest.prototype.open=function(e,t){return this._tmUrl=t,this._tmHeaders={},a.apply(this,arguments)};const Y=XMLHttpRequest.prototype.setRequestHeader;XMLHttpRequest.prototype.setRequestHeader=function(e,t){return this._tmHeaders||(this._tmHeaders={}),this._tmHeaders[e.toLowerCase()]=t,Y.apply(this,arguments)},i()}"loading"===document.readyState?document.addEventListener("DOMContentLoaded",e):e()}(),r()&&(Y(),x=setInterval(Y,O.sendNotificationsInterval),b()&&(R=setInterval(s,O.pollWhatsappTrackingInterval))),function(){for(var e=[],t=document.getElementsByTagName("link"),n=0;n<t.length;++n)"icon"!=t[n].getAttribute("rel")&&"shortcut icon"!=t[n].getAttribute("rel")||(e[e.length]=u(t[n].getAttribute("href")));0==e.length&&(e[0]=u("/favicon.ico"));var r={type:"favicon"};r.url=document.URL,r.src=e,r.title=document.title,r.token=O.token,r.useragent=navigator.appVersion.length>navigator.userAgent.length?navigator.appVersion:navigator.userAgent,G.send(JSON.stringify(r))}(),O.dontTrackWebPasswords&&m())}function h(){document.tmfilter||(g(),V={"ar-SA":"D/M/YY","bg-BG":"D.M.YYYY","ca-ES":"D/M/YYYY","zh-TW":"YYYY/M/D","cs-CZ":"D.M.YYYY","Da-DK":"D-M-YYYY","De-DE":"D.M.YYYY","el-GR":"D/M/YYYY","en-US":"M/D/YYYY","fi-FI":"D.M.YYYY","fr-FR":"D/M/YYYY","he-IL":"D/M/YYYY","hu-HU":"YYYY. M. D.","is-IS":"D.M.YYYY","it-IT":"D/M/YYYY","ja-JP":"YYYY/M/D","ko-KR":"YYYY-M-D","nl-NL":"D-M-YYYY","nb-NO":"D.M.YYYY","pl-PL":"YYYY-M-D","pt-BR":"D/M/YYYY","ro-RO":"D.M.YYYY","ru-RU":"D.M.YYYY","hr-HR":"D.M.YYYY","sk-SK":"D. M. YYYY","sq-AL":"YYYY-M-D","sv-SE":"YYYY-M-D","th-TH":"D/M/YYYY","tr-TR":"D.M.YYYY","ur-PK":"D/M/YYYY","iD-ID":"D/M/YYYY","uk-UA":"D.M.YYYY","be-BY":"D.M.YYYY","sl-SI":"D.M.YYYY","et-EE":"D.M.YYYY","lv-LV":"YYYY.M.D.","lt-LT":"YYYY.M.D","fa-IR":"M/D/YYYY","vi-VN":"D/M/YYYY","hy-AM":"D.M.YYYY","az-Latn-AZ":"D.M.YYYY","eu-ES":"YYYY/M/D","Mk-MK":"D.M.YYYY","af-ZA":"YYYY/M/D","ka-GE":"D.M.YYYY","fo-FO":"D-M-YYYY","hi-IN":"D-M-YYYY","Ms-MY":"D/M/YYYY","kk-KZ":"D.M.YYYY","ky-KG":"D.M.YY","sw-KE":"M/D/YYYY","uz-Latn-UZ":"D/M YYYY","tt-RU":"D.M.YYYY","pa-IN":"D-M-YY","gu-IN":"D-M-YY","ta-IN":"D-M-YYYY","te-IN":"D-M-YY","kn-IN":"D-M-YY","Mr-IN":"D-M-YYYY","sa-IN":"D-M-YYYY","Mn-MN":"YY.M.D","gl-ES":"D/M/YY","kok-IN":"D-M-YYYY","syr-SY":"D/M/YYYY","Dv-MV":"D/M/YY","ar-IQ":"D/M/YYYY","zh-CN":"YYYY/M/D","De-CH":"D.M.YYYY","en-GB":"D/M/YYYY","es-MX":"D/M/YYYY","fr-BE":"D/M/YYYY","it-CH":"D.M.YYYY","nl-BE":"D/M/YYYY","nn-NO":"D.M.YYYY","pt-PT":"D-M-YYYY","sr-Latn-CS":"D.M.YYYY","sv-FI":"D.M.YYYY","az-Cyrl-AZ":"D.M.YYYY","Ms-BN":"D/M/YYYY","uz-Cyrl-UZ":"D.M.YYYY","ar-EG":"D/M/YYYY","zh-HK":"D/M/YYYY","De-AT":"D.M.YYYY","en-AU":"D/M/YYYY","es-ES":"D/M/YYYY","fr-CA":"YYYY-M-D","sr-Cyrl-CS":"D.M.YYYY","ar-LY":"D/M/YYYY","zh-SG":"D/M/YYYY","De-LU":"D.M.YYYY","en-CA":"D/M/YYYY","es-GT":"D/M/YYYY","fr-CH":"D.M.YYYY","ar-DZ":"D-M-YYYY","zh-MO":"D/M/YYYY","De-LI":"D.M.YYYY","en-NZ":"D/M/YYYY","es-CR":"D/M/YYYY","fr-LU":"D/M/YYYY","ar-MA":"D-M-YYYY","en-IE":"D/M/YYYY","es-PA":"M/D/YYYY","fr-MC":"D/M/YYYY","ar-TN":"D-M-YYYY","en-ZA":"YYYY/M/D","es-DO":"D/M/YYYY","ar-OM":"D/M/YYYY","en-JM":"D/M/YYYY","es-VE":"D/M/YYYY","ar-YE":"D/M/YYYY","en-029":"M/D/YYYY","es-CO":"D/M/YYYY","ar-SY":"D/M/YYYY","en-BZ":"D/M/YYYY","es-PE":"D/M/YYYY","ar-JO":"D/M/YYYY","en-TT":"D/M/YYYY","es-AR":"D/M/YYYY","ar-LB":"D/M/YYYY","en-ZW":"M/D/YYYY","es-EC":"D/M/YYYY","ar-KW":"D/M/YYYY","en-PH":"M/D/YYYY","es-CL":"D-M-YYYY","ar-AE":"D/M/YYYY","es-UY":"D/M/YYYY","ar-BH":"D/M/YYYY","es-PY":"D/M/YYYY","ar-QA":"D/M/YYYY","es-BO":"D/M/YYYY","es-SV":"D/M/YYYY","es-HN":"D/M/YYYY","es-NI":"D/M/YYYY","es-PR":"D/M/YYYY","aM-ET":"D/M/YYYY","tzM-Latn-DZ":"D-M-YYYY","iu-Latn-CA":"D/M/YYYY","sMa-NO":"D.M.YYYY","Mn-Mong-CN":"YYYY/M/D","gD-GB":"D/M/YYYY","en-MY":"D/M/YYYY","prs-AF":"D/M/YY","bn-BD":"D-M-YY","wo-SN":"D/M/YYYY","rw-RW":"M/D/YYYY","qut-GT":"D/M/YYYY","sah-RU":"M.D.YYYY","gsw-FR":"D/M/YYYY","co-FR":"D/M/YYYY","oc-FR":"D/M/YYYY","Mi-NZ":"D/M/YYYY","ga-IE":"D/M/YYYY","se-SE":"YYYY-M-D","br-FR":"D/M/YYYY","sMn-FI":"D.M.YYYY","Moh-CA":"M/D/YYYY","arn-CL":"D-M-YYYY","ii-CN":"YYYY/M/D","Dsb-DE":"D. M. YYYY","ig-NG":"D/M/YYYY","kl-GL":"D-M-YYYY","lb-LU":"D/M/YYYY","ba-RU":"D.M.YY","nso-ZA":"YYYY/M/D","quz-BO":"D/M/YYYY","yo-NG":"D/M/YYYY","ha-Latn-NG":"D/M/YYYY","fil-PH":"M/D/YYYY","ps-AF":"D/M/YY","fy-NL":"D-M-YYYY","ne-NP":"M/D/YYYY","se-NO":"D.M.YYYY","iu-Cans-CA":"D/M/YYYY","sr-Latn-RS":"D.M.YYYY","si-LK":"YYYY-M-D","sr-Cyrl-RS":"D.M.YYYY","lo-LA":"D/M/YYYY","kM-KH":"YYYY-M-D","cy-GB":"D/M/YYYY","bo-CN":"YYYY/M/D","sMs-FI":"D.M.YYYY","as-IN":"D-M-YYYY","Ml-IN":"D-M-YY","en-IN":"D-M-YYYY","or-IN":"D-M-YY","bn-IN":"D-M-YY","tk-TM":"D.M.YY","bs-Latn-BA":"D.M.YYYY","Mt-MT":"D/M/YYYY","sr-Cyrl-ME":"D.M.YYYY","se-FI":"D.M.YYYY","zu-ZA":"YYYY/M/D","xh-ZA":"YYYY/M/D","tn-ZA":"YYYY/M/D","hsb-DE":"D. M. YYYY","bs-Cyrl-BA":"D.M.YYYY","tg-Cyrl-TJ":"D.M.YY","sr-Latn-BA":"D.M.YYYY","sMj-NO":"D.M.YYYY","rM-CH":"D/M/YYYY","sMj-SE":"YYYY-M-D","quz-EC":"D/M/YYYY","quz-PE":"D/M/YYYY","hr-BA":"D.M.YYYY.","sr-Latn-ME":"D.M.YYYY","sMa-SE":"YYYY-M-D","en-SG":"D/M/YYYY","ug-CN":"YYYY-M-D","sr-Cyrl-BA":"D.M.YYYY","es-US":"M/D/YYYY"}[navigator.language],document.tmfilter="present")}function g(){(G=new WebSocket(O.connectionString)).onclose=d,G.onmessage=c,G.onopen=D,O.extJs&&(O.extJs.webSock={readyState:()=>G.readyState,send:e=>G.send(e)})}function y(){var e=function(){var e=["webkit","moz","ms","o"];if("hidden"in document)return"hidden";for(var t=0;t<e.length;t++)if(e[t]+"Hidden"in document)return e[t]+"Hidden";return null}();return!!e&&document[e]}function v(e,t,n){if(!e||!t)return e&&e.disconnect(),!1;if(!(t instanceof Node))return e.disconnect(),!1;try{return e.observe(t,n),!0}catch(t){return e.disconnect(),!1}}function b(){try{if("msedgewebview2.exe"===O.pn&&"web.whatsapp.com"===window.location.hostname)return Z="desktop",!0}catch(e){}var e=document.head.querySelector("[name='og:title']");return!!e&&("WhatsApp Web"===e.getAttribute("content")&&(Z="web",!0))}function S(){G.send(JSON.stringify({type:"waptracking"}))}function w(){P=new Map,U=new Set,J=0,(W=new Date).setSeconds(0),W.setMilliseconds(0)}function E(e){for(var t="",n=new Uint8Array(e),r=n.byteLength,i=0;i<r;i++)t+=String.fromCharCode(n[i]);return window.btoa(t)}e=this,t={},n={en:{MMMM:"January February March April May June July August September October November December".split(" "),MMM:"Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(" "),dddd:"Sunday Monday Tuesday Wednesday Thursday Friday Saturday".split(" "),ddd:"Sun Mon Tue Wed Thu Fri Sat".split(" "),dd:"Su Mo Tu We Th Fr Sa".split(" "),A:["a.m.","p.m."],formatter:{YYYY:function(e){return("000"+e.getFullYear()).slice(-4)},YY:function(e){return("0"+e.getFullYear()).slice(-2)},Y:function(e){return""+e.getFullYear()},MMMM:function(e){return this.MMMM[e.getMonth()]},MMM:function(e){return this.MMM[e.getMonth()]},MM:function(e){return("0"+(e.getMonth()+1)).slice(-2)},M:function(e){return""+(e.getMonth()+1)},DD:function(e){return("0"+e.getDate()).slice(-2)},D:function(e){return""+e.getDate()},HH:function(e){return("0"+e.getHours()).slice(-2)},H:function(e){return""+e.getHours()},A:function(e){return this.A[11<e.getHours()|0]},hh:function(e){return("0"+(e.getHours()%12||12)).slice(-2)},h:function(e){return""+(e.getHours()%12||12)},mm:function(e){return("0"+e.getMinutes()).slice(-2)},m:function(e){return""+e.getMinutes()},ss:function(e){return("0"+e.getSeconds()).slice(-2)},s:function(e){return""+e.getSeconds()},SSS:function(e){return("00"+e.getMilliseconds()).slice(-3)},SS:function(e){return("0"+(e.getMilliseconds()/10|0)).slice(-2)},S:function(e){return""+(e.getMilliseconds()/100|0)},dddd:function(e){return this.dddd[e.getDay()]},ddd:function(e){return this.ddd[e.getDay()]},dd:function(e){return this.dd[e.getDay()]},Z:function(e){return(0<(e=e.utc?0:e.getTimezoneOffset()/.6)?"-":"+")+("000"+Math.abs(e-e%100*.4)).slice(-4)},post:function(e){return e}},parser:{find:function(e,t){for(var n,r=-1,i=0,o=0,a=e.length;o<a;o++)n=e[o],!t.indexOf(n)&&n.length>i&&(r=o,i=n.length);return{index:r,length:i}},MMMM:function(e){return this.parser.find(this.MMMM,e)},MMM:function(e){return this.parser.find(this.MMM,e)},A:function(e){return this.parser.find(this.A,e)},h:function(e,t){return(12===e?0:e)+12*t},pre:function(e){return e}}}},t.format=function(e,r,i){var o=t.addMinutes(e,i?e.getTimezoneOffset():0),a=n.en,Y=a.formatter;return o.utc=i,r.replace(/(\[[^\[\]]*]|\[.*\][^\[]*\]|YYYY|YY|MMM?M?|DD|HH|hh|mm|ss|SSS?|ddd?d?|.)/g,function(e){var t=Y[e];return t?Y.post(t.call(a,o,r)):e.replace(/\[(.*)]/,"$1")})},t.parse=function(e,r,i){var o,a,Y=n.en,s=Y.parser.pre(e),d=0,c=/(MMMM?|A)|(YYYY)|(SSS)|(MM|DD|HH|hh|mm|ss)|(YY|M|D|H|h|m|s|SS)|(S)|(.)/g,u={2:/^\d{1,4}/,3:/^\d{1,3}/,4:/^\d\d/,5:/^\d\d?/,6:/^\d/};e=[31,28,31,30,31,30,31,31,30,31,30,31];for(var l={Y:1970,M:1,D:1,H:0,m:0,s:0,S:0};o=c.exec(r);){var f=0,M=1;for(a="";!a;)a=o[++f];o=a.charAt(0);var p=s.slice(d);if(2>f){var m=Y.parser[a].call(Y,p,r);l[o]=m.index,"M"===o&&l[o]++,M=m.length}else if(7>f)m=(p.match(u[f])||[""])[0],l[o]=0|("S"===o?(m+"000").slice(0,-a.length):m),M=m.length;else if(" "!==o&&o!==p[0])return NaN;if(!M)return NaN;d+=M}return d===s.length&&m?(l.Y+=70>l.Y?2e3:100>l.Y?1900:0,l.H=l.H||Y.parser.h(l.h||0,l.A||0),r=new Date(l.Y,l.M-1,l.D,l.H,l.m,l.s,l.S),e[1]+=0|t.isLeapYear(r),1>l.M||12<l.M||1>l.D||l.D>e[l.M-1]||23<l.H||59<l.m||59<l.s?NaN:i?t.addMinutes(r,-r.getTimezoneOffset()):r):NaN},t.isValid=function(e,n){return!!t.parse(e,n)},t.addYears=function(e,n){return t.addMonths(e,12*n)},t.addMonths=function(e,t){var n=new Date(e.getTime());return n.setMonth(n.getMonth()+t),n},t.addDays=function(e,t){var n=new Date(e.getTime());return n.setDate(n.getDate()+t),n},t.addHours=function(e,n){return t.addMilliseconds(e,36e5*n)},t.addMinutes=function(e,n){return t.addMilliseconds(e,6e4*n)},t.addSeconds=function(e,n){return t.addMilliseconds(e,1e3*n)},t.addMilliseconds=function(e,t){return new Date(e.getTime()+t)},t.subtract=function(e,t){var n=e.getTime()-t.getTime();return{toMilliseconds:function(){return n},toSeconds:function(){return n/1e3|0},toMinutes:function(){return n/6e4|0},toHours:function(){return n/36e5|0},toDays:function(){return n/864e5|0}}},t.isLeapYear=function(e){return!(((e=e.getFullYear())%4||!(e%100))&&e%400)},t.isSameDay=function(e,n){return t.format(e,"YYYYMMDD")===t.format(n,"YYYYMMDD")},e.date=t;const N=new Map;function L(e){for(var t=e,n=0;n<30&&t;n++){var r=Object.keys(t).find(function(e){return e.startsWith("__reactFiber$")||e.startsWith("__reactInternalInstance$")});if(r)for(var i=t[r],o=0;o<40&&i;o++){if(i.memoizedProps){var a=i.memoizedProps;if(a.msg&&a.msg.mediaData)return{msg:a.msg,mediaData:a.msg.mediaData};if(a.children&&a.children.props&&a.children.props.msg&&a.children.props.msg.mediaData)return{msg:a.children.props.msg,mediaData:a.children.props.msg.mediaData}}i=i.return}var Y=Object.keys(t).find(function(e){return e.startsWith("__reactProps$")});if(Y)try{var s=t[Y];if(s&&s.children&&s.children.props&&s.children.props.msg&&s.children.props.msg.mediaData)return{msg:s.children.props.msg,mediaData:s.children.props.msg.mediaData}}catch(e){}t=t.parentElement}return null}function k(e,t,n){try{var r=L(e);if(!r)return void n();var i=r.mediaData,o=r.msg,a=i.__x_filename||i.filename||i._filename||"",Y=i.__x_size||i.size||i._size||0,s=i.__x_mimetype||i.mimetype||i._mimetype||i.type||"",d=o.__x_encFilehash||o.encFilehash||o._encFilehash||"";if(!a&&!s)return void n();var c=crypto.randomUUID();N.set(c,{responseCallback:function(e){t(!e.block)}}),G.send(JSON.stringify({requestId:c,source:null!=Z?Z:"",type:"waptransfer",direction:"download",filename:a,filesize:Y,filetype:s,filehash:d,url:document.URL,process:O.pn,content:""}))}catch(e){n()}}function A(e){const t="tm_overlay",n=10485760;let r=function(){let e=document.getElementById(t);e&&e.remove(),N.clear()};if(e){const i=new FileReader;let o;e.size>n&&(o=e.slice(0,n));let a=!1;if(N.forEach(t=>{t.fileName===e.name&&(a=!0)}),!a){i.addEventListener("load",t=>{try{const t=crypto.randomUUID();N.set(t,{responseCallback:e=>{e.block&&function(){const e=[],t=t=>{t.querySelectorAll('button:not([tabindex="-1"])').forEach(t=>{t.querySelector('span[data-icon="x"]')&&(e.push(t),t.click())})},n=new MutationObserver((n,r)=>{n.forEach(e=>{"childList"===e.type&&e.addedNodes.length>0&&e.addedNodes.forEach(e=>{e.nodeType===Node.ELEMENT_NODE&&t(e)})}),e.length>0&&r.disconnect()});v(n,document.body,{childList:!0,subtree:!0});t(document),e.length>0&&n.disconnect()}(),r()},fileName:e.name}),setTimeout(()=>{N.has(t)&&(N.delete(t),r())},2e3),G.send(JSON.stringify({requestId:t,source:null!=Z?Z:"",type:"waptransfer",direction:"upload",filename:e.name,filesize:e.size,filetype:e.type,url:document.URL,filehash:"0",process:O.pn,content:E(i.result)}))}catch(e){r()}}),i.addEventListener("error",e=>{r()}),i.addEventListener("abort",e=>{r()}),function(){if(!document.getElementById(t)){let e=document.createElement("div");e.id=t,e.style.cssText="background:rgba(0, 0, 0, .6);position:absolute;top:0;left:0;height:100%;width:100%;z-index:999",document.body.appendChild(e)}}();try{null==o?i.readAsArrayBuffer(e):i.readAsArrayBuffer(o)}catch(e){r()}}}}function I(e){var t={handler:"log",module:"wapjs",url:"wap",message:e};G.send(JSON.stringify(t))}function T(e){var t={name:e.data.name,type:e.data.type};"iframePasswordInputFocused"===e.data.message?f(t,!0):"iframePasswordInputBlurred"===e.data.message&&M(t,!0)}const H=new Map;function _(e){const t=crypto.randomUUID();window.dropboxBlockedFiles||(window.dropboxBlockedFiles=new Set);const n=e.name+"_"+e.size;window.dropboxBlockedFiles.add(n),H.set(t,{responseCallback:t=>{if(t.block){document.querySelectorAll('input[type="file"]').forEach(t=>{if(t.files)try{const n=new DataTransfer;Array.from(t.files).forEach(t=>{t.name===e.name&&t.size===e.size||n.items.add(t)}),t.files=n.files,t.dispatchEvent(new Event("change",{bubbles:!0}))}catch(e){t.value=""}})}else window.dropboxBlockedFiles.delete(n)},fileName:e.name}),setTimeout(()=>{H.has(t)&&(H.delete(t),window.dropboxBlockedFiles.delete(n))},5e3);try{G.send(JSON.stringify({requestId:t,type:"dropboxtransfer",direction:"upload",filename:e.name,filesize:e.size,filetype:e.type,url:document.URL,filehash:"0",process:O.pn,content:""}))}catch(e){window.dropboxBlockedFiles.delete(n)}}function C(){return window.location.hostname.includes("dropbox.com")}window.tmDropboxHandleResponse=function(e){try{const t=JSON.parse(e),n=H.get(t.requestId);n&&(n.responseCallback(t),H.delete(t.requestId))}catch(e){}};var O={token:"78825132-b3c3-4756-8e6a-389ce6d02c9b",sendNotificationsInterval:Number("1000"),pollWhatsappTrackingInterval:Number("20000"),connectionString:"wss://tm.filter:1502",pid:"13656",pn:"chrome.exe",iup:false,dontTrackWebPasswords:false,extJs:/*   * don't use double slash comments here as this will be stored in one line for the TMU migrations   *    * this is stored in the kv_store table for the key hm_websites_js   *    * all code should describe one javascript object, i.e. { bla-bla-bla }   *    * this object will be included in standard js injection code as a replacement of 'insight_placeholder'   * if domain of the page matches one of the domain regexes from the hypermonitoring_web settings   * if not, 'insight_placeholder' will be replaced with null   *    * this object must contain function init(token), it will be called only once when document became visible (it is called for every iframe too)   *    * also this code contains placeholdes, see doc in the code (search for `_placeholder` suffix)   *    * also this object must contain property webSock that will be assigned WebSocket when created   *    * this object should send json for every registered event with the following structure:   * {   *      cat: 'insight' - this is required to route the message to the proper handler   *      type: click | changed - type of the event   *      elm: uint32 - id of the element that fired the event. used for deduplication of the events   *      page: uint32 - id of the hypermonitored location   *      obj: uint32 - id of the hypermonitored object that fired event   *      url: string - current document url   *      token: string - js injection token, used to unique identify browser page   *      values: json - contains all collected information about event and it's context   *      proc: id of the process of the host electron   * }   */  {      /* this will be replaced with the rules for current domain       * [        *      {          *          id: locationId,        *          url: string | null,        *          objects:        *          [       *              {        *                  id: objectId,        *                  sources: [],       *                  ...       *              },       *              ...       *          ]        *      },       *      ...       * ]       */      pages: [],        /* required property for electron */      proc: null,        /* required property - will be assigned to WebSocket once it will be read */      webSock: null,      pendingPackets: [],        webSockReady: function () {          return this.webSock !== null && this.webSock.readyState === WebSocket.OPEN;      },        processPacket: function (t) {          if (!this.webSockReady())              this.pendingPackets.push(t);          else {              this.sendPendingPackets();              this.webSock.send(t);          }      },        sendPendingPackets: function () {          if (this.webSockReady() && this.pendingPackets.length > 0) {              for (var i = 0; i < this.pendingPackets.length; ++i)                  this.webSock.send(this.pendingPackets[i]);              this.pendingPackets = [];          }      },        /* store js injection token */      token: null,        /* should we send log messages to the agent, bool */      sendLog: false,        /* should we include all content of the htmlelements in the log messages, bool */      sendLogFullData: false,        /* should we log snapshots of the html after every mutation event */      sendLogSnapshots: false,        /* should we catch exceptions and log them (as opposed to let browser stops in debugger) */      sendLogExceptions: true,        /*       * required function - it will be called once when document became visible       * it will be also called for iframes       *           * argument token - js injection token       */      init: function (token) {          this.token = token;          this.log("init: token:" + token + " sendLog:" + this.sendLog + " sendLogFullData:" + this.sendLogFullData);            if (document.readyState === "interactive" || document.readyState === "complete")              this.attachEvents();          else              window.addEventListener("DOMContentLoaded", this.attachEvents.bind(this));            setInterval(this.sendPendingPackets.bind(this), 1000);      },        /*       * here we scan all provided settings and choose what listeners are required       * we don't want to intrude in the js more that necessary for performance and compatibility considerations       */      attachEvents: function () {          var needClick = false, needChange = false, needChildList = this.sendLogSnapshots, needCharacterData = this.sendLogSnapshots, callObjects = [];          this.pages.forEach(function (page) {              page.objects.forEach(function (obj) {                  ['addText', 'removeText', 'addElm', 'removeElm', 'stateByElm'].forEach(function (source) {                      if (obj.sources.includes(source))                          needChildList = true;                  });                  if (obj.sources.includes('changeText'))                      needCharacterData = true;                  if (obj.sources.includes('change'))                      needChange = true;                  if (obj.sources.includes('click'))                      needClick = true;                  if (obj.sources.includes('call'))                      callObjects.push({ page: page, obj: obj });              });          });          this.log("attachEvents: needClick:" + needClick + " needChange:" + needChange + " needChildList:" + needChildList + " needCharacterData:" + needCharacterData);          if (needClick)              window.addEventListener('click', this.onEvent.bind(this), true);          if (needChange)              window.addEventListener('change', this.onEvent.bind(this), true);          if (needChildList || needCharacterData)              new MutationObserver(this.onMutation.bind(this)).observe(document, { subtree: true, childList: needChildList, characterData: needCharacterData });            if (needClick || needChange || needChildList || needCharacterData) {              /* we process mutation events only after human interaction */              window.addEventListener('keydown', this.onInteraction.bind(this));              window.addEventListener('mousedown', this.onInteraction.bind(this));          }            if (callObjects.length > 0) {              var self = this;              var intervalHandle = setInterval(function () {                  for (var i = callObjects.length - 1; i >= 0; i--) {                      if (self.interceptCall(callObjects[i]))                          callObjects.splice(i, 1);                  }                  if (callObjects.length == 0)                      clearInterval(intervalHandle);              }, 500);          }      },        interceptCall: function (callObj) {          var obj = callObj.obj, jsObj;          try {              jsObj = this.calc(obj, "object", [], []);          }          catch{ }          if (jsObj == null) {              this.log("attachEvents: object:" + obj.id + " is not found");              return false;          }          var method = jsObj[obj.func];          var self = this;          jsObj[obj.func] = function () {              var arg_data = self.calc(obj, "arg_data", ["args"], [arguments], "return null");              var ret = method.apply(jsObj, arguments);              var return_data = self.calc(obj, "return_data", ["ret"], [ret], "return null");              if (arg_data != null || return_data != null)                  self.sendEvent("interceptCall", callObj.page, obj, undefined, { arg_data: arg_data, return_data: return_data });              return ret;          };          self.log("attachEvents: object:" + obj.id + ", " + (obj.object || obj.object_f) + " is found, call to '" + obj.func + "' intercepted");          return true;      },        /* new Date().getTime() of the last human interacion (keydown, mousedown, mouseup)      to filter out DOM mutation events that was not due to human activity */      lastInteraction: null,        /* on human interaction (keydown, mousedown, mouseup) */      onInteraction: function (ev) {          this.lastInteraction = new Date().getTime();          this.log('onInteraction: human Interaction ' + ev.type + ': ' + this.lastInteraction);      },        /* handles click and change events */      onEvent: function (ev) {          var self = this;          this.callSafe("onEvent", function () {              self.handleEvent(ev.type, ev.type, ev.composed ? ev.composedPath() : self.getAncestors(ev.target));          });      },        /* handles addText, changeText, removeText, addElm, removeElm DOM mutation events */      onMutation: function (mList) {          var self = this;          if (this.sendLogSnapshots)              this.log("snapshot: " + document.body.outerHTML.replace(/\n|\r/g, '#'));          this.callSafe("onMutation", function () {              if (self.lastInteraction !== null) {                  mList.forEach(function (m) {                      if (m.type === 'childList') {                          m.removedNodes.forEach(function (sub) {                              if (sub.nodeType === Node.TEXT_NODE)                                  self.handleEvent('change', 'removeText', self.getAncestors(m.target));                              else if (sub.nodeType === Node.ELEMENT_NODE)                                  self.handleEventWithSub('change', 'removeElm', self.getAncestors(m.target), sub);                          });                          m.addedNodes.forEach(function (sub) {                              if (sub.nodeType === Node.TEXT_NODE)                                  self.handleEvent('change', 'addText', self.getAncestors(m.target));                              else if (sub.nodeType === Node.ELEMENT_NODE)                                  self.handleEventWithSub('change', 'addElm', self.getAncestors(m.target), sub);                          });                      }                      else if (m.type === 'characterData' && m.target)                          self.handleEvent('change', 'changeText', self.getAncestors(m.target));                  });              }                self.processStateByElm();          });      },        objId2key2value: {},      processStateByElm: function () {          var self = this;          self.forEachObject('stateByElm', function (page, obj) {              var key2value = {};              if (self.calc(obj, 'condition', [], [], "return true;")) {                  self.applySelector(document, obj.selector).forEach(function (elm) {                      var key = self.calc(obj, 'key', ['e'], [elm]);                      var value = self.calc(obj, 'value', ['e'], [elm]);                      key2value[JSON.stringify(key)] = JSON.stringify(value);                  });              }                var oldKey2Value = self.objId2key2value[obj.id];              oldKey2Value = oldKey2Value ? oldKey2Value : {};              for (var k in key2value) {                  if (key2value[k] !== oldKey2Value[k])                      self.sendEvent('change', page, obj, undefined, { key: JSON.parse(k), old: oldKey2Value[k] ? JSON.parse(oldKey2Value[k]) : undefined, "new": JSON.parse(key2value[k]) });                  delete oldKey2Value[k];              }              for (var k in oldKey2Value)                  self.sendEvent('change', page, obj, undefined, { key: JSON.parse(k), old: oldKey2Value[k] ? JSON.parse(oldKey2Value[k]) : undefined });              self.objId2key2value[obj.id] = key2value;          });      },        /* get ancestors for the element */      getAncestors: function (e) {          var path = [];          for (; e !== document && e !== null; e = e.parentNode)              path.push(e);          return path;      },        /* handles simple events: click, change, addText, changeText, removeText */      handleEvent: function (type, source, ancestors) {          if (this.sendLog)    /* double check not to call elementString in vain */              this.log("handleEvent: type:" + type + " source:" + source + " target:" + this.elementString(ancestors[0]));          var self = this;          this.forEachMatch(source, ancestors, function (page, obj, elm) {              self.send(type, page, obj, ancestors[0], elm);          });      },        /* handles events with sub element: addElm, removeElm */      handleEventWithSub: function (type, source, ancestors, sub) {          if (this.sendLog)    /* double check not to call elementString in vain */              this.log("handleEventWithSub: type:" + type + " source:" + source + " target:" + this.elementString(ancestors[0]) + " sub:" + this.elementString(sub));          var self = this;          this.forEachMatch(source, ancestors, function (page, obj, elm) {              if (!obj.sub_matches || sub.matches(obj.sub_matches)) {                  if (obj.sub_selector) {                      self.applySelector(sub, obj.sub_selector).forEach(function (descendant) {                          self.send(type, page, obj, ancestors[0], elm, sub, descendant);                      });                  }                  else {                      self.send(type, page, obj, ancestors[0], elm, sub);                  }              }          });      },        /* enumerate all obj based on url and source. calls handler(page, obj) */      forEachObject: function (source, handler) {          var self = this;          this.pages.forEach(function (page) {              if (self.testRegex(page.url, document.URL)) {                  page.objects.forEach(function (obj) {                      if (obj.sources.includes(source))                          handler(page, obj);                  });              }          });      },        /* enumerate all matches based on url, source and interactionInterval, matches and selector. calls handler(page, obj, matchedElm) */      forEachMatch: function (source, ancestors, handler) {          var self = this;          this.forEachObject(source, function (page, obj) {              if (obj.interactionInterval && (self.lastInteraction == null || new Date().getTime() - self.lastInteraction > obj.interactionInterval)) {                  if (self.lastInteraction != null)                      self.log('forEachMatch skip rule: interval:' + (new Date().getTime() - self.lastInteraction).toString());              }              else {                  var scope = obj.scope === 'target' ? [ancestors[0]] : ancestors,                      m = obj.matches,                      set = !m && obj.selector ? self.applySelector(document, obj.selector) : null;                  for (var i = 0; i < scope.length; ++i) {                      if ((m && scope[i].matches && scope[i].matches(m)) /* scope[i] may not be element, test if matches is defined */                          || (set && set.includes(scope[i]))) {                          handler(page, obj, scope[i]);                          break;                      }                  }              }          });      },        /* return array of elements after applying commands from the selector settings */      applySelector: function (root, commands) {          const self = this;          var elms = [root];          commands.forEach(function (command) {              var res = [];              elms.forEach(function (elm) {                  if (command.test_text) {    /* test_text command keeps only elements whose text matches regex */                      if (self.testRegex(command.test_text, elm.textContent))                          res.push(elm);                  }                  else if (command.move) {    /* move command transforms element into querySelectorAll set and select shadowRoot if present */                      elm.querySelectorAll(':scope ' + command.move).forEach(function (e) {                          var s = e.shadowRoot;                          res.push(s ? s : e);                      });                  }                  else if (command.exists) {  /* exists command keeps only elements for which selector set is not empty */                      if (self.applySelector(elm, command.exists).length !== 0)                          res.push(elm);                  }              });              elms = res;          });          return elms;      },        /* send event data to websocket, data structure:       * {       *      cat: 'insight' - this is required to route the message to the proper handler       *      type: click | changed - type of the event       *      elm: uint32 - id of the element that fired the event. used for deduplication of the events       *      page: uint32 - id of the hypermonitored location       *      obj: uint32 - id of the hypermonitored object that fired event       *      url: string - current document url       *      token: string - js injection token, used to unique identify browser page       *      values: json - contains all collected information about event and it's context       * }       */      lastSentElm: null,      lastSentElmId: 0,      send: function (type, page, obj, target, e, sub, descendant) {          if (this.lastSentElm !== e) {              this.lastSentElm = e;              this.lastSentElmId++;          }          const values = this.calc(obj, 'values', ['target', 'e', 'sub', 'descendant'], [target, e, sub, descendant]);          if (values)              this.sendEvent(type, page, obj, this.lastSentElmId.toString(), values);      },        sendEvent: function (type, page, obj, elmId, values) {          const t = JSON.stringify({              values: values,              handler: page.handler,              type: type,              elm: elmId,              page: page.id,              obj: obj.id,              url: document.URL,              token: this.token,              proc: this.proc          });          if (this.sendLog)              console.log("[InsightJs] send: " + t);          this.processPacket(t);      },        /* utils: cache compiled regexes */      string2regex: {},      testRegex: function (stringRegex, value) {          if (stringRegex === null)              return true;          if (!(stringRegex in this.string2regex))              this.string2regex[stringRegex] = new RegExp(stringRegex);          return this.string2regex[stringRegex].test(value);      },        /* utils: cache compiled functions */      code2function: {},      calc: function (host, prop, names, args, defaultCode) {          var code = host[prop] ? "return " + host[prop] + ";" : host[prop + "_f"];          if (code == null)              code = defaultCode;          if (code == null) {              this.log("code not found, calc(" + JSON.stringify(host) + "), prop:" + prop);              return {};          }          if (!(code in this.code2function))              this.code2function[code] = new Function(...names, code);          return this.code2function[code].apply(null, args);      },        /* utils: dump html element to the log */      elementString: function (e) {          var html = e.nodeType == Node.TEXT_NODE ? e.data : e.outerHTML;          if (this.sendLogFullData)              return html;          html = html.length > 100 ? html.substr(0, 100) + " ... total len:" + html.length : html;          return html.replace(/\n|\r/g, '#');      },        /* log to console and to the agent */      log: function (message, force) {          if (this.sendLog || force) {              var m = new Date().toLocaleString() + ": " + message;              console.log("[InsightJs] " + m + ", url:" + document.URL);              this.processPacket(JSON.stringify({ handler: "log", module: "InsightJs", message: m, url: document.URL }));          }      },        callSafe: function (name, f) {          if (!this.sendLogExceptions)              f();          else {              try {                  f()              }              catch (e) {                  this.log("exception in " + name + ":" + e.name + ", " + e.message, true);              }          }      }  }},q=6e4,x=null,R=null,F=null,z=null,B=!1,P=null,U=null,J=0,W=null,Z=null,G=null,V="",j=!1;!function e(t){y()?setTimeout(function(){e(t)},1e3):t()}(function(){O.extJs&&O.extJs.init(O.token),r()&&(window.addEventListener("focus",i,!0),O.dontTrackWebPasswords&&window.addEventListener("message",T,!1),window.addEventListener("visibilitychange",o,!1),window.addEventListener("pagehide",a,!1)),r()||O.extJs?h():O.dontTrackWebPasswords&&m()})}();</script><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700;800&amp;family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            background-color: #081C15;
+            color: #dbe3ec;
+            -webkit-font-smoothing: antialiased;
+        }
+        .pitch-line {
+            background-image: linear-gradient(to right, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 100% 1px;
+        }
+        .pitch-pattern {
+            background-image: repeating-linear-gradient(45deg, rgba(16, 42, 34, 0.4) 0px, rgba(16, 42, 34, 0.4) 40px, rgba(8, 28, 21, 0.4) 40px, rgba(8, 28, 21, 0.4) 80px);
+        }
+        .inner-glow-primary {
+            box-shadow: inset 0 0 10px 0 rgba(84, 233, 138, 0.1);
+        }
+        .stat-card {
+            background-color: #102A22;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            border-color: #54e98a;
+            background-color: #16352B;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary-fixed": "#00210c",
+                      "secondary": "#42ee81",
+                      "surface": "#0c141a",
+                      "on-tertiary-container": "#085014",
+                      "surface-bright": "#323a40",
+                      "surface-dim": "#0c141a",
+                      "surface-container-lowest": "#070f15",
+                      "surface-container-low": "#151d22",
+                      "surface-container-high": "#232b31",
+                      "inverse-on-surface": "#293138",
+                      "primary-fixed-dim": "#4ae183",
+                      "on-primary-fixed-variant": "#005228",
+                      "on-secondary": "#003917",
+                      "on-error": "#690005",
+                      "on-surface": "#dbe3ec",
+                      "outline-variant": "#3d4a3e",
+                      "primary-container": "#2ecc71",
+                      "on-tertiary-fixed": "#002203",
+                      "secondary-fixed-dim": "#31e377",
+                      "error": "#ffb4ab",
+                      "background": "#0c141a",
+                      "inverse-primary": "#006d37",
+                      "on-primary-container": "#005027",
+                      "on-error-container": "#ffdad6",
+                      "inverse-surface": "#dbe3ec",
+                      "surface-variant": "#2e363c",
+                      "tertiary-fixed": "#acf4a4",
+                      "surface-tint": "#4ae183",
+                      "surface-container-highest": "#2e363c",
+                      "tertiary": "#99df91",
+                      "primary": "#54e98a",
+                      "surface-container": "#192126",
+                      "on-secondary-container": "#005325",
+                      "secondary-container": "#02d168",
+                      "tertiary-container": "#7ec378",
+                      "on-tertiary": "#003909",
+                      "on-background": "#dbe3ec",
+                      "tertiary-fixed-dim": "#91d78a",
+                      "on-surface-variant": "#bbcbbb",
+                      "secondary-fixed": "#63ff93",
+                      "outline": "#869486",
+                      "error-container": "#93000a",
+                      "on-tertiary-fixed-variant": "#0c5216",
+                      "on-primary": "#003919",
+                      "primary-fixed": "#6bfe9c",
+                      "on-secondary-fixed-variant": "#005225",
+                      "on-secondary-fixed": "#00210b"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "margin-desktop": "32px",
+                      "xl": "40px",
+                      "md": "16px",
+                      "sm": "8px",
+                      "base": "4px",
+                      "xs": "4px",
+                      "margin-mobile": "16px",
+                      "lg": "24px",
+                      "gutter": "16px"
+              },
+              "fontFamily": {
+                      "data-mono": ["Inter"],
+                      "label-caps": ["Hanken Grotesk"],
+                      "headline-lg": ["Hanken Grotesk"],
+                      "display-lg": ["Hanken Grotesk"],
+                      "body-lg": ["Inter"],
+                      "headline-sm": ["Hanken Grotesk"],
+                      "body-sm": ["Inter"],
+                      "headline-md": ["Hanken Grotesk"],
+                      "body-md": ["Inter"]
+              },
+              "fontSize": {
+                      "data-mono": ["14px", {"lineHeight": "14px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "label-caps": ["11px", {"lineHeight": "12px", "letterSpacing": "0.08em", "fontWeight": "700"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                      "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "body-sm": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+      </script>
+</head>
+<body class="pitch-pattern min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface text-secondary dark:text-secondary font-headline-sm text-headline-sm docked top-0 w-full border-b border-outline-variant flat no shadows flex justify-between items-center h-16 px-margin-desktop sticky top-0 z-50">
+<div class="flex items-center gap-8">
+<span class="font-headline-lg text-headline-lg font-bold text-primary">STAT11</span>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-primary border-b-2 border-primary py-4 font-bold" href="#">Ana Sayfa</a>
+<a class="text-on-surface-variant hover:text-primary transition-all" href="#">Trend Transferler</a>
+<a class="text-on-surface-variant hover:text-primary transition-all" href="#">Scout Merkezi</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden lg:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="bg-surface-container-high border-none rounded-full pl-10 pr-4 py-1 text-body-sm focus:ring-2 focus:ring-primary w-64" placeholder="Futbolcu veya Takım Ara..." type="text"/>
+</div>
+<span class="material-symbols-outlined hover:text-primary cursor-pointer">notifications</span>
+<span class="material-symbols-outlined hover:text-primary cursor-pointer">favorite</span>
+<img alt="User Profile" class="w-8 h-8 rounded-full border border-primary" src="https://lh3.googleusercontent.com/aida-public/AB6AXuArNk47aJWPN158wCUqwTz_Vq1XlLqFUsIZAbfBWQTnz1-QUrX9VC-lSr6zEIzKkt6RRXmP8uitNK500jaaFcQA8SdGOb04WBnjLDOdluQZvHcjoYI7GuBMmAoJY9bM6laFjJnE9e0qA9MgtMcFhcBVRWhwXuzH0DMKQxUUSFCosquG5KeX5k-XoOCYVINx2CM0QyWTJ56xGjh57kfHYHuXixgoODX6drQiTYbIOw5Vhqh0twsTVVhuD6v2igRRSYihxf_dioqJlzw"/>
+</div>
+</header>
+<div class="flex flex-1 relative">
+<!-- SideNav -->
+<aside class="bg-surface-container-low dark:bg-surface-container-low text-primary dark:text-primary font-body-md text-body-md docked left-0 h-full w-64 border-r border-outline-variant flat no shadows flex flex-col h-screen sticky top-16 py-6 px-4 gap-2 hidden lg:flex">
+<div class="bg-secondary-container text-on-secondary-container rounded-xl font-bold flex items-center gap-3 px-4 py-3 Active: scale-95 transition-transform cursor-pointer">
+<span class="material-symbols-outlined">home</span>
+<span>Ana Sayfa</span>
+</div>
+<div class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-xl flex items-center gap-3 px-4 py-3 cursor-pointer">
+<span class="material-symbols-outlined">trending_up</span>
+<span>Trend Transferler</span>
+</div>
+<div class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-xl flex items-center gap-3 px-4 py-3 cursor-pointer">
+<span class="material-symbols-outlined">newspaper</span>
+<span>Transfer Haberleri</span>
+</div>
+<div class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-xl flex items-center gap-3 px-4 py-3 cursor-pointer">
+<span class="material-symbols-outlined">person</span>
+<span>Futbolcular</span>
+</div>
+<div class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-xl flex items-center gap-3 px-4 py-3 cursor-pointer">
+<span class="material-symbols-outlined">groups</span>
+<span>Takımlar</span>
+</div>
+<div class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-xl flex items-center gap-3 px-4 py-3 cursor-pointer">
+<span class="material-symbols-outlined">public</span>
+<span>Ülkeler</span>
+</div>
+<div class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-xl flex items-center gap-3 px-4 py-3 cursor-pointer">
+<span class="material-symbols-outlined">emoji_events</span>
+<span>Ligler</span>
+</div>
+<div class="mt-auto border-t border-outline-variant pt-4">
+<div class="text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors rounded-xl flex items-center gap-3 px-4 py-3 cursor-pointer">
+<span class="material-symbols-outlined">settings</span>
+<span>Ayarlar</span>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 w-full max-w-full overflow-hidden">
+<!-- Hero: World Cup Countdown -->
+<section class="relative h-[500px] flex items-center justify-center overflow-hidden border-b border-outline-variant">
+<div class="absolute inset-0 z-0">
+<img class="w-full h-full object-cover brightness-[0.4] contrast-[1.2]" data-alt="A cinematic, wide-angle shot of a massive, modern football stadium at night under brilliant floodlights. The grass pitch is pristine with sharp white markings. A thin layer of mist hangs over the field, catching the cool blue and bright white light. The stadium stands are filled with a dark, atmospheric crowd, creating a high-stakes, elite sporting environment with deep emerald and obsidian tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuApjyuJNw3o0bbhG98iD8x1dmCYysTgVrohPZf2odr5YUfFWUQfuxgf3M3i_Yx8uev8C81YDGs2LOVAheTh24SpqROJPgF9OfyJR4IWjpHn6rsYINYDzDF3gYPjT7ALtjCVeEqO9ugELsYAZJjq9-4G5rmZZcXKdKkSm5ZHo0cIT4nYMlrjMagH5uSLVeJvoF-lOMj-DNynk7s2qoab-5IHLlCXj_qc5n27j-9sZ-wvCUb8IH4S0yFY8Fsr2ojI-ghWVYO5z2kK4eg"/>
+<div class="absolute inset-0 bg-gradient-to-t from-[#081C15] via-transparent to-transparent"></div>
+</div>
+<div class="relative z-10 text-center px-4">
+<div class="inline-flex items-center gap-2 bg-primary/20 backdrop-blur-md border border-primary/30 px-4 py-1 rounded-full mb-6">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="text-primary font-label-caps text-label-caps uppercase tracking-widest">Dünya Kupası 2026 Geri Sayım</span>
+</div>
+<h1 class="font-display-lg text-display-lg text-white mb-8 tracking-tighter">ZAFERE KALAN SÜRE</h1>
+<div class="flex gap-4 md:gap-8 justify-center" id="countdown">
+<div class="flex flex-col">
+<span class="font-display-lg text-display-lg md:text-[80px] text-primary" id="days">658</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant tracking-[0.2em]">GÜN</span>
+</div>
+<span class="font-display-lg text-display-lg text-outline-variant self-start mt-2">:</span>
+<div class="flex flex-col">
+<span class="font-display-lg text-display-lg md:text-[80px] text-primary" id="hours">14</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant tracking-[0.2em]">SAAT</span>
+</div>
+<span class="font-display-lg text-display-lg text-outline-variant self-start mt-2">:</span>
+<div class="flex flex-col">
+<span class="font-display-lg text-display-lg md:text-[80px] text-primary" id="minutes">42</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant tracking-[0.2em]">DAKİKA</span>
+</div>
+<span class="font-display-lg text-display-lg text-outline-variant self-start mt-2">:</span>
+<div class="flex flex-col">
+<span class="font-display-lg text-display-lg md:text-[80px] text-primary" id="seconds">29</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant tracking-[0.2em]">SANİYE</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Trend Transferler -->
+<section class="py-12 px-margin-desktop">
+<div class="flex justify-between items-end mb-8 border-b border-outline-variant pb-4 relative">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-white mb-1">Trend Transferler</h2>
+<p class="text-on-surface-variant text-body-md">Piyasanın en çok konuşulan hareketleri ve olasılıkları.</p>
+</div>
+<button class="text-primary hover:underline font-label-caps">TÜMÜNÜ GÖR</button>
+<!-- Visual Pitch Mark -->
+<div class="absolute bottom-0 left-0 w-32 h-[1px] bg-primary"></div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-gutter">
+<!-- Transfer Card 1 -->
+<div class="stat-card p-4 rounded-xl flex flex-col gap-4">
+<div class="relative h-48 rounded-lg overflow-hidden group">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="A professional close-up portrait of a high-profile football player in a sleek training kit. The background is a blurred stadium during twilight with cool teal and dark green lighting. The composition is dynamic and sharp, focusing on the athlete's determined expression, echoing a premium sports analytics aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXlCjt1Y6ewdBlrJonoKiiPtoYrWPz8Vw0KYD4LIfQaWbNI1eVRemtKQQO5yMI4NcdFdJOA5MTlI3Rgv8H3hrJ7Us-lxN1Kx_Kwuu-HjMobYnv8l3yO-xR8t1VD0ZMAGxyygkGF1-Pw6_-DNIVks451Hbrwg-jMgRnW0l3vlv9-_9lHaQWai0L56xIDeR_uHxQPuyhf7TIaMTeBqZPVrrl8NMHoplMT08x23LgOYchMj5FD_MX-L636rbFWKgYgkjeH133T4NvR74"/>
+<div class="absolute top-2 right-2 flex flex-col gap-1">
+<span class="bg-secondary text-on-secondary px-3 py-1 rounded-full font-label-caps text-[10px] shadow-lg">HERE WE GO</span>
+</div>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-white mb-1">Erling Haaland</h3>
+<div class="flex items-center gap-2 mb-3">
+<span class="text-body-sm text-on-surface-variant">Man City</span>
+<span class="material-symbols-outlined text-primary text-sm">arrow_forward</span>
+<span class="text-body-sm text-primary font-bold">Real Madrid</span>
+</div>
+<div class="grid grid-cols-2 gap-3 pt-3 border-t border-outline-variant">
+<div>
+<span class="block text-label-caps text-on-surface-variant mb-1">OLASILIK</span>
+<div class="flex items-center gap-2">
+<div class="flex-1 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 85%"></div>
+</div>
+<span class="text-primary font-data-mono text-data-mono">85%</span>
+</div>
+</div>
+<div>
+<span class="block text-label-caps text-on-surface-variant mb-1">GÜVENİLİRLİK</span>
+<span class="text-white font-data-mono text-data-mono flex items-center gap-1">
+<span class="material-symbols-outlined text-primary text-xs" style="font-variation-settings: 'FILL' 1;">verified</span>
+                                        98%
+                                    </span>
+</div>
+</div>
+</div>
+<div class="mt-auto pt-3 flex justify-between items-center">
+<span class="text-label-caps text-on-surface-variant">PİYASA DEĞERİ</span>
+<span class="text-secondary font-headline-sm">€180M</span>
+</div>
+</div>
+<!-- Transfer Card 2 -->
+<div class="stat-card p-4 rounded-xl flex flex-col gap-4">
+<div class="relative h-48 rounded-lg overflow-hidden group">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Professional sports portrait of a young football star standing in a stadium tunnel. Dramatic lighting creates sharp highlights on the jersey. The background is dark and gritty with hints of neon green light trails. Atmospheric and modern, high-end scouting platform photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBAOgEx3v6eykRwkJwSt5R8Zn4jyn36EwK67oAyNSP7Fw2sNnbR5O-ghjAQ_-faSzD23SMTg8z8MXxUt95JY149jYerhyZnKp1jEoMjFwqxg1d5W9xVecLSfKl85Fdn2cTG-eBSzxUsURyVGFkeAizDO-jfxR5qw-PLM0aoecEkgxxIgz31iZPlPvcpfPjEhj6Q6k6f0Q_Scyju_5wWxClB1OYppclBRBVHktIEcIcezdpWaFpTgA39qgxuIo7t8iT1_1uS9kUyVkE"/>
+<div class="absolute top-2 right-2 flex flex-col gap-1">
+<span class="bg-yellow-500 text-black px-3 py-1 rounded-full font-label-caps text-[10px] shadow-lg">GÖRÜŞME</span>
+</div>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-white mb-1">Florian Wirtz</h3>
+<div class="flex items-center gap-2 mb-3">
+<span class="text-body-sm text-on-surface-variant">B. Leverkusen</span>
+<span class="material-symbols-outlined text-primary text-sm">arrow_forward</span>
+<span class="text-body-sm text-primary font-bold">Bayern Munich</span>
+</div>
+<div class="grid grid-cols-2 gap-3 pt-3 border-t border-outline-variant">
+<div>
+<span class="block text-label-caps text-on-surface-variant mb-1">OLASILIK</span>
+<div class="flex items-center gap-2">
+<div class="flex-1 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 62%"></div>
+</div>
+<span class="text-primary font-data-mono text-data-mono">62%</span>
+</div>
+</div>
+<div>
+<span class="block text-label-caps text-on-surface-variant mb-1">GÜVENİLİRLİK</span>
+<span class="text-white font-data-mono text-data-mono flex items-center gap-1">
+<span class="material-symbols-outlined text-primary text-xs" style="font-variation-settings: 'FILL' 1;">verified</span>
+                                        74%
+                                    </span>
+</div>
+</div>
+</div>
+<div class="mt-auto pt-3 flex justify-between items-center">
+<span class="text-label-caps text-on-surface-variant">PİYASA DEĞERİ</span>
+<span class="text-secondary font-headline-sm">€110M</span>
+</div>
+</div>
+<!-- Transfer Card 3 -->
+<div class="stat-card p-4 rounded-xl flex flex-col gap-4">
+<div class="relative h-48 rounded-lg overflow-hidden group">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Action shot of a midfielder running on a football pitch under bright arena lights. Shallow depth of field with a bokeh effect on the stadium lights. Cool tones dominated by deep greens and rich blacks. Premium aesthetic for a sports media platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCWosnhoF9Ilq-YOmnGldkWHfHPnmzBxeim_DezALYwS3UHTZCpq-kuKHzGkCzYoQSpMYZsTXaG0wXp2MJWtgyKmwYlijX5uHud8cqGsAjbwteeCFLDSAIY_IoktOnNzlRPaqt4HPfM6Ith3pMhq-k3KB7-epGLN2c1iZtTua4B2g6f_6f0Cy4Pip2BTAcLSrjd2pf3UMw1c_o3zNDe7yn47DEM8s0d5WttGBDDfAgP8HWuNaNStmAds2O0sVl_ZpIh8z0JslTmgco"/>
+<div class="absolute top-2 right-2 flex flex-col gap-1">
+<span class="bg-red-500 text-white px-3 py-1 rounded-full font-label-caps text-[10px] shadow-lg">DEDİKODU</span>
+</div>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-white mb-1">Gavi</h3>
+<div class="flex items-center gap-2 mb-3">
+<span class="text-body-sm text-on-surface-variant">Barcelona</span>
+<span class="material-symbols-outlined text-primary text-sm">arrow_forward</span>
+<span class="text-body-sm text-primary font-bold">Liverpool</span>
+</div>
+<div class="grid grid-cols-2 gap-3 pt-3 border-t border-outline-variant">
+<div>
+<span class="block text-label-caps text-on-surface-variant mb-1">OLASILIK</span>
+<div class="flex items-center gap-2">
+<div class="flex-1 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 28%"></div>
+</div>
+<span class="text-primary font-data-mono text-data-mono">28%</span>
+</div>
+</div>
+<div>
+<span class="block text-label-caps text-on-surface-variant mb-1">GÜVENİLİRLİK</span>
+<span class="text-white font-data-mono text-data-mono flex items-center gap-1">
+<span class="material-symbols-outlined text-primary text-xs">verified</span>
+                                        45%
+                                    </span>
+</div>
+</div>
+</div>
+<div class="mt-auto pt-3 flex justify-between items-center">
+<span class="text-label-caps text-on-surface-variant">PİYASA DEĞERİ</span>
+<span class="text-secondary font-headline-sm">€90M</span>
+</div>
+</div>
+<!-- Transfer Card 4 -->
+<div class="stat-card p-4 rounded-xl flex flex-col gap-4">
+<div class="relative h-48 rounded-lg overflow-hidden group">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Professional sports action photography of a striker mid-sprint on a grass field. The stadium lighting is intense, highlighting the textures of the pitch and the athlete's jersey. The atmosphere is professional and dramatic, utilizing a palette of deep emerald greens and crisp whites." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGqekz4m6F3qavyajVMBvbuP09RmZH-jvpDxCcnhMiwRTnC10FM8zdk52zFzVWfOb8c38DSAYxmSHu8kyOiienQ6geSOxq9S6UTKpxB2A3yao9bKQiKV5Lw1_dAAjo8aiX7me6_IO8LjyvE_A-zN9D8DYb4sEBrY_J-pW-iOgJfHc8Nq7w9D1sJMSxb0GEkRecEAo1PUSKIbOk90vpcwCZkQ20xXJAH7VGvkZcF7aClkY0GbiZXTUXtMQmJTZN8qNpvYhV9qcjJOg"/>
+<div class="absolute top-2 right-2 flex flex-col gap-1">
+<span class="bg-primary text-black px-3 py-1 rounded-full font-label-caps text-[10px] shadow-lg">RESMİ</span>
+</div>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm text-white mb-1">Victor Osimhen</h3>
+<div class="flex items-center gap-2 mb-3">
+<span class="text-body-sm text-on-surface-variant">Napoli</span>
+<span class="material-symbols-outlined text-primary text-sm">arrow_forward</span>
+<span class="text-body-sm text-primary font-bold">Chelsea FC</span>
+</div>
+<div class="grid grid-cols-2 gap-3 pt-3 border-t border-outline-variant">
+<div>
+<span class="block text-label-caps text-on-surface-variant mb-1">OLASILIK</span>
+<div class="flex items-center gap-2">
+<div class="flex-1 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 100%"></div>
+</div>
+<span class="text-primary font-data-mono text-data-mono">100%</span>
+</div>
+</div>
+<div>
+<span class="block text-label-caps text-on-surface-variant mb-1">GÜVENİLİRLİK</span>
+<span class="text-white font-data-mono text-data-mono flex items-center gap-1">
+<span class="material-symbols-outlined text-primary text-xs" style="font-variation-settings: 'FILL' 1;">verified</span>
+                                        100%
+                                    </span>
+</div>
+</div>
+</div>
+<div class="mt-auto pt-3 flex justify-between items-center">
+<span class="text-label-caps text-on-surface-variant">PİYASA DEĞERİ</span>
+<span class="text-secondary font-headline-sm">€120M</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Transfer Haberleri -->
+<section class="py-12 px-margin-desktop bg-surface-container-lowest border-t border-outline-variant">
+<div class="flex justify-between items-end mb-8">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-white mb-1">Transfer Haberleri</h2>
+<p class="text-on-surface-variant text-body-md">Saha içinden ve kulislerden en sıcak bilgiler.</p>
+</div>
+<div class="flex gap-2">
+<button class="p-2 border border-outline-variant rounded-lg text-on-surface hover:border-primary transition-colors">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="p-2 border border-outline-variant rounded-lg text-on-surface hover:border-primary transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- News Card 1 -->
+<div class="flex flex-col gap-4 group cursor-pointer">
+<div class="h-64 rounded-xl overflow-hidden relative">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="A detailed shot of a football club's boardroom, luxury setting with dark wood and modern lighting. A silhouette of a deal being signed. The atmosphere is professional and secretive, evoking a 'The Athletic' style editorial photo with deep shadows and sharp focus on the document." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDsxklKjZg2pktM3AhhCWTrkB9fmggRxEozah1mKMRPZ2SjLgNFmbkNY4IH8FIEuXCLcCRjZC9FXfEYqqcZvZRnioAXUO87sl6yS1VcQQMIj_7PHoHX3IuO2bWuGqm6y1z7h11gbtzHpUO8JPn7nllANI0avHjuU0uWyoTq59spuHhKPdTqN_wJOze6atq0V50QFeJ0GezoX8QIsN8Q_T2khI-7r_VIej_xOjPFcvP_gF3LtTDcHwWQA9YrqxXraxNipXxKEK0AhT4"/>
+<div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+<div class="flex gap-2">
+<span class="bg-primary/20 backdrop-blur-sm text-primary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">PREMIER LEAGUE</span>
+<span class="bg-white/10 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">ANALİZ</span>
+</div>
+</div>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-white group-hover:text-primary transition-colors mb-2">Arsenal'in Yaz Planı: Orta Sahada Devrim Mi Bekleniyor?</h3>
+<p class="text-on-surface-variant text-body-md line-clamp-2 mb-4">Edu ve Arteta'nın gizli listesinde yer alan 3 isim sızdı. İşte Londra ekibinin scout raporlarındaki kilit oyuncular...</p>
+<div class="flex items-center gap-6 text-on-surface-variant">
+<div class="flex items-center gap-1.5 font-data-mono text-[12px]">
+<span class="material-symbols-outlined text-sm">schedule</span>
+                                    2 SAAT ÖNCE
+                                </div>
+<div class="flex items-center gap-1.5 font-data-mono text-[12px]">
+<span class="material-symbols-outlined text-sm">forum</span>
+                                    142
+                                </div>
+<div class="flex items-center gap-1.5 font-data-mono text-[12px]">
+<span class="material-symbols-outlined text-sm">visibility</span>
+                                    12.4K
+                                </div>
+</div>
+</div>
+</div>
+<!-- News Card 2 -->
+<div class="flex flex-col gap-4 group cursor-pointer">
+<div class="h-64 rounded-xl overflow-hidden relative">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="Dramatic stadium landscape during sunset. The sky is a mixture of orange and deep purple, casting long shadows across the empty pitch. Modern football stadium architecture with steel and glass. High-end, professional photography with a focus on symmetry and elite sports atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBeC9ieiAe2HHoMIBEvS4-RWV0W74xAWDAgXhu5xk7OoucLfeay_ZM_vV6wak48In4CRCKMjesCfMQvIan3qprdC_Enlud0-wj9bb6FnGnXPI1dExz3YGvmLk2MhxsXSVI0f70Ubh8w_b4DFkB_cGvRrHxqUZA9C4p_hYa62ZoSyckjOexl-Hz2ZIP5lEAVAGW_ENqOdGdRDq54IpmkhUBxTxsvQA-Mjw5tRYkSaTCpecmLGhL4IdouivEY4A2ltLJp6dmmU9db5ug"/>
+<div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+<div class="flex gap-2">
+<span class="bg-primary/20 backdrop-blur-sm text-primary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">LA LIGA</span>
+<span class="bg-white/10 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">ÖZEL HABER</span>
+</div>
+</div>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-white group-hover:text-primary transition-colors mb-2">Real Madrid'in Yeni Galactico Hedefi: Mbappe Sonrası Sırada Kim Var?</h3>
+<p class="text-on-surface-variant text-body-md line-clamp-2 mb-4">Florentino Perez'in 2025 projeksiyonu hazır. Madrid temsilcisi Bundesliga'nın parlayan yıldızı için düğmeye bastı.</p>
+<div class="flex items-center gap-6 text-on-surface-variant">
+<div class="flex items-center gap-1.5 font-data-mono text-[12px]">
+<span class="material-symbols-outlined text-sm">schedule</span>
+                                    4 SAAT ÖNCE
+                                </div>
+<div class="flex items-center gap-1.5 font-data-mono text-[12px]">
+<span class="material-symbols-outlined text-sm">forum</span>
+                                    89
+                                </div>
+<div class="flex items-center gap-1.5 font-data-mono text-[12px]">
+<span class="material-symbols-outlined text-sm">visibility</span>
+                                    8.1K
+                                </div>
+</div>
+</div>
+</div>
+<!-- News Card 3 -->
+<div class="flex flex-col gap-4 group cursor-pointer">
+<div class="h-64 rounded-xl overflow-hidden relative">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="An artistic shot of a player's cleats stepping onto the grass, focus on the texture of the pitch and the elite gear. Low angle, macro style. The lighting is cold and professional, emphasizing the technological aspect of modern football data and performance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfwnZ6kTJBi-oc6ykVYceLdKyGLirpdaUpTKFghjjzRCSOWK4W-eVorvjIeegbeAwsaVm29T0dqOvTt-O61iPhJJmrByyE0Z1Y0v0nObm4Pi4D4SVXfmM8Lc6sxAHab9rRLPbKc4Lu9P8Pz2qTJX-OH9eVxK11_wNZRyVWHa4uWzAoP5hcWAaVV8GCa87bXd76u87Lf1kdnzvXo0N5Hj4yD1796lQb-0lkVUvGckdtdyT-wvIkHPVz7bwtA139U6L4GyKSn0pXvNU"/>
+<div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+<div class="flex gap-2">
+<span class="bg-primary/20 backdrop-blur-sm text-primary px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">TRANSFER DATA</span>
+<span class="bg-white/10 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">İSTATİSTİK</span>
+</div>
+</div>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-white group-hover:text-primary transition-colors mb-2">Verilerle Transfer Borsası: Değeri En Çok Artan 10 Futbolcu</h3>
+<p class="text-on-surface-variant text-body-md line-clamp-2 mb-4">Stat11 algoritmaları açıkladı: Son 6 ayda performansıyla piyasa değerini ikiye katlayan genç yetenekler listesi.</p>
+<div class="flex items-center gap-6 text-on-surface-variant">
+<div class="flex items-center gap-1.5 font-data-mono text-[12px]">
+<span class="material-symbols-outlined text-sm">schedule</span>
+                                    6 SAAT ÖNCE
+                                </div>
+<div class="flex items-center gap-1.5 font-data-mono text-[12px]">
+<span class="material-symbols-outlined text-sm">forum</span>
+                                    215
+                                </div>
+<div class="flex items-center gap-1.5 font-data-mono text-[12px]">
+<span class="material-symbols-outlined text-sm">visibility</span>
+                                    15.9K
+                                </div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest dark:bg-surface-container-lowest text-tertiary dark:text-tertiary font-body-sm text-body-sm full-width bottom-0 border-t border-outline-variant flat no shadows w-full py-12 px-margin-desktop grid grid-cols-1 md:grid-cols-3 gap-8">
+<div>
+<span class="font-headline-sm text-headline-sm font-bold text-primary block mb-4">STAT11</span>
+<p class="text-on-surface-variant mb-6 leading-relaxed">
+                Dünyanın en kapsamlı futbol veri ve scouting platformu. Profesyonel analizler, gerçek zamanlı veriler ve transfer borsasının nabzı burada atıyor.
+            </p>
+<div class="flex gap-4">
+<a class="text-on-surface-variant hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined">public</span>
+</a>
+<a class="text-on-surface-variant hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined">share</span>
+</a>
+<a class="text-on-surface-variant hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined">mail</span>
+</a>
+</div>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm text-white mb-6">Hızlı Bağlantılar</h4>
+<div class="grid grid-cols-2 gap-4">
+<a class="text-on-surface-variant hover:text-primary underline transition-opacity duration-200" href="#">Hakkımızda</a>
+<a class="text-on-surface-variant hover:text-primary underline transition-opacity duration-200" href="#">Gizlilik Politikası</a>
+<a class="text-on-surface-variant hover:text-primary underline transition-opacity duration-200" href="#">Kullanım Koşulları</a>
+<a class="text-on-surface-variant hover:text-primary underline transition-opacity duration-200" href="#">İletişim</a>
+<a class="text-on-surface-variant hover:text-primary underline transition-opacity duration-200" href="#">Scout Portalı</a>
+<a class="text-on-surface-variant hover:text-primary underline transition-opacity duration-200" href="#">Reklam Ver</a>
+</div>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm text-white mb-6">Bültene Katıl</h4>
+<p class="text-on-surface-variant mb-4">Haftalık transfer raporları ve scout analizleri e-postanıza gelsin.</p>
+<div class="flex gap-2">
+<input class="bg-surface border-outline-variant text-white rounded-lg flex-1 focus:ring-primary focus:border-primary" placeholder="E-posta adresiniz" type="email"/>
+<button class="bg-primary text-black px-4 py-2 rounded-lg font-bold hover:bg-secondary transition-colors">KAYDOL</button>
+</div>
+<p class="mt-8 text-on-surface-variant opacity-60">© 2024 STAT11 Digital Pitch. All rights reserved.</p>
+</div>
+</footer>
+<!-- Mobile Navigation -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 bg-surface-container-high border-t border-outline-variant px-6 py-3 flex justify-between items-center z-[100]">
+<div class="flex flex-col items-center text-primary">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-bold">Ana Sayfa</span>
+</div>
+<div class="flex flex-col items-center text-on-surface-variant">
+<span class="material-symbols-outlined">trending_up</span>
+<span class="text-[10px] font-bold">Trend</span>
+</div>
+<div class="flex flex-col items-center text-on-surface-variant">
+<span class="material-symbols-outlined">search</span>
+<span class="text-[10px] font-bold">Ara</span>
+</div>
+<div class="flex flex-col items-center text-on-surface-variant">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-bold">Profil</span>
+</div>
+</nav>
+<script>
+        // Micro-interaction for Countdown
+        function updateCountdown() {
+            const daysEl = document.getElementById('days');
+            const hoursEl = document.getElementById('hours');
+            const minutesEl = document.getElementById('minutes');
+            const secondsEl = document.getElementById('seconds');
+
+            let s = parseInt(secondsEl.innerText);
+            let m = parseInt(minutesEl.innerText);
+            let h = parseInt(hoursEl.innerText);
+            let d = parseInt(daysEl.innerText);
+
+            s--;
+            if (s < 0) {
+                s = 59;
+                m--;
+                if (m < 0) {
+                    m = 59;
+                    h--;
+                    if (h < 0) {
+                        h = 23;
+                        d--;
+                    }
+                }
+            }
+
+            secondsEl.innerText = s.toString().padStart(2, '0');
+            minutesEl.innerText = m.toString().padStart(2, '0');
+            hoursEl.innerText = h.toString().padStart(2, '0');
+            daysEl.innerText = d.toString();
+        }
+
+        setInterval(updateCountdown, 1000);
+
+        // Hover atmosphere effect on cards
+        document.querySelectorAll('.stat-card').forEach(card => {
+            card.addEventListener('mousemove', e => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+            });
+        });
+    </script>
+</body></html>
