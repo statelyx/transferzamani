@@ -625,6 +625,27 @@ h3,
   color: var(--primary);
 }
 
+.squad-empty {
+  display: grid;
+  gap: 8px;
+  min-height: 150px;
+  align-content: center;
+  padding: 18px;
+  border: 1px dashed rgba(84, 233, 138, 0.35);
+  border-radius: var(--radius);
+  background: rgba(84, 233, 138, 0.06);
+}
+
+.squad-empty strong {
+  color: var(--text);
+}
+
+.squad-empty p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
 .squad-open {
   width: 100%;
 }

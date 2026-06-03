@@ -337,6 +337,43 @@ const leagueTeams: Record<string, string[]> = {
   "super-lig": ["Galatasaray", "Fenerbahce", "Besiktas JK", "Trabzonspor", "Basaksehir FK", "Samsunspor", "Göztepe", "Kocaelispor", "Konyaspor", "Kasimpasa"]
 };
 
+const fullLeagueTeams: Record<string, string[]> = {
+  "premier-league": [
+    "AFC Bournemouth", "Arsenal FC", "Aston Villa", "Brentford FC", "Brighton & Hove Albion",
+    "Burnley FC", "Chelsea FC", "Crystal Palace", "Everton FC", "Fulham FC", "Leeds United",
+    "Liverpool FC", "Manchester City", "Manchester United", "Newcastle United", "Nottingham Forest",
+    "Sunderland AFC", "Tottenham Hotspur", "West Ham United", "Wolverhampton Wanderers"
+  ],
+  laliga: [
+    "Athletic Bilbao", "Atlético de Madrid", "CA Osasuna", "Celta de Vigo", "Deportivo Alavés",
+    "Elche CF", "FC Barcelona", "Getafe CF", "Girona FC", "Levante UD", "Rayo Vallecano",
+    "RCD Espanyol Barcelona", "RCD Mallorca", "Real Betis Balompié", "Real Madrid", "Real Oviedo",
+    "Real Sociedad", "Sevilla FC", "Valencia CF", "Villarreal CF"
+  ],
+  "serie-a": [
+    "AC Milan", "ACF Fiorentina", "AS Roma", "Atalanta BC", "Bologna FC 1909", "Cagliari Calcio",
+    "Como 1907", "Genoa CFC", "Hellas Verona", "Inter Milan", "Juventus FC", "Parma Calcio 1913",
+    "Pisa Sporting Club", "SS Lazio", "SSC Napoli", "Torino FC", "Udinese Calcio", "US Cremonese",
+    "US Lecce", "US Sassuolo"
+  ],
+  bundesliga: [
+    "1.FC Heidenheim 1846", "1.FC Köln", "1.FC Union Berlin", "1.FSV Mainz 05", "Bayer 04 Leverkusen",
+    "Bayern Munich", "Borussia Dortmund", "Borussia Mönchengladbach", "Eintracht Frankfurt", "FC Augsburg",
+    "FC St. Pauli", "Hamburger SV", "RB Leipzig", "SC Freiburg", "SV Werder Bremen", "TSG 1899 Hoffenheim",
+    "VfB Stuttgart", "VfL Wolfsburg"
+  ],
+  "ligue-1": [
+    "AJ Auxerre", "Angers SCO", "AS Monaco", "FC Lorient", "FC Metz", "FC Nantes", "FC Toulouse",
+    "Le Havre AC", "LOSC Lille", "OGC Nice", "Olympique Lyon", "Olympique Marseille", "Paris FC",
+    "Paris Saint-Germain", "RC Lens", "RC Strasbourg Alsace", "Stade Brestois 29", "Stade Rennais FC"
+  ],
+  "super-lig": [
+    "Alanyaspor", "Antalyaspor", "Basaksehir FK", "Besiktas JK", "Caykur Rizespor", "Eyüpspor",
+    "Fatih Karagümrük", "Fenerbahce", "Galatasaray", "Gaziantep FK", "Genclerbirligi Ankara",
+    "Göztepe", "Kasimpasa", "Kayserispor", "Kocaelispor", "Konyaspor", "Samsunspor", "Trabzonspor"
+  ]
+};
+
 function HomeDashboard({
   data,
   players,
@@ -360,8 +397,9 @@ function HomeDashboard({
   const [countriesOpen, setCountriesOpen] = useState(false);
   const [selectedLeague, setSelectedLeague] = useState(leagueCatalog[5]);
   const [selectedTeam, setSelectedTeam] = useState("Galatasaray");
-  const selectedTeams = leagueTeams[selectedLeague.id] || [];
-  const selectedTeamSquad = selectedTeam === "Galatasaray" || selectedTeam === data?.team.name ? players.slice(0, 12) : topPlayers;
+  const selectedTeams = fullLeagueTeams[selectedLeague.id] || leagueTeams[selectedLeague.id] || [];
+  const hasConnectedSquad = selectedTeam === "Galatasaray" || selectedTeam === data?.team.name;
+  const selectedTeamSquad = hasConnectedSquad ? players.slice(0, 12) : [];
   const portalPills = [
     { label: "Canli veri", value: liveStatusText(data), tone: data ? "green" : "amber" },
     { label: "Transfer duyumu", value: rumors[0]?.headline || "Yeni sinyal bekleniyor", tone: "green" },
@@ -434,7 +472,7 @@ function HomeDashboard({
               key={league.id}
               onClick={() => {
                 setSelectedLeague(league);
-                setSelectedTeam(leagueTeams[league.id]?.[0] || "");
+                setSelectedTeam(fullLeagueTeams[league.id]?.[0] || leagueTeams[league.id]?.[0] || "");
               }}
             >
               <span>{league.name}</span>
@@ -473,16 +511,23 @@ function HomeDashboard({
             <Shield size={18} />
           </div>
           <div className="squad-list">
-            {selectedTeamSquad.slice(0, 8).map((player) => (
-              <button type="button" key={player.id} onClick={() => onSelectPlayer(player.id)}>
-                <PlayerAvatar player={player} size="sm" />
-                <span>
-                  <strong>{player.shortName}</strong>
-                  <em>{player.positionLabel} / {player.marketValueLabel}</em>
-                </span>
-                <b>{player.metrics.future}</b>
-              </button>
-            ))}
+            {selectedTeamSquad.length ? (
+              selectedTeamSquad.slice(0, 8).map((player) => (
+                <button type="button" key={player.id} onClick={() => onSelectPlayer(player.id)}>
+                  <PlayerAvatar player={player} size="sm" />
+                  <span>
+                    <strong>{player.shortName}</strong>
+                    <em>{player.positionLabel} / {player.marketValueLabel}</em>
+                  </span>
+                  <b>{player.metrics.future}</b>
+                </button>
+              ))
+            ) : (
+              <div className="squad-empty">
+                <strong>Kadro verisi bekleniyor</strong>
+                <p>Bu takim icin oyuncu listesi API ve Supabase senkronu baglandiktan sonra dolacak.</p>
+              </div>
+            )}
           </div>
           <button className="squad-open" type="button" onClick={() => setView("profile")}>
             Tam kadro ve analiz <ArrowRight size={16} />
