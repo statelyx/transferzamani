@@ -1,5 +1,13 @@
 "use client";
 
+import {
+  buildFormationSlots,
+  EAFC_FORMATIONS,
+  PLAYER_ROLE_PRESETS,
+  POSITION_LABELS,
+  tacticalRoleKey,
+  type TacticalSlot
+} from "@/lib/football/eafc-reference";
 import type { GalatasarayPayload, PlayerProfile, Rumor, TeamEvent } from "@/lib/sofasport";
 import {
   Activity,
@@ -66,19 +74,7 @@ const navItems: Array<{ key: ViewKey; label: string; icon: React.ReactNode }> = 
   { key: "scout", label: "Scout Merkezi", icon: <Target size={18} /> }
 ];
 
-const lineupSlots = [
-  { id: "lw", label: "LW", role: "F" },
-  { id: "st", label: "ST", role: "F" },
-  { id: "rw", label: "RW", role: "F" },
-  { id: "cm1", label: "LCM", role: "M" },
-  { id: "cm2", label: "CM", role: "M" },
-  { id: "cm3", label: "RCM", role: "M" },
-  { id: "lb", label: "LB", role: "D" },
-  { id: "cb1", label: "LCB", role: "D" },
-  { id: "cb2", label: "RCB", role: "D" },
-  { id: "rb", label: "RB", role: "D" },
-  { id: "gk", label: "GK", role: "G" }
-] as const;
+const lineupSlots = buildFormationSlots("4-3-3");
 
 const countryOptions = [
   { name: "Ingiltere", image: "/football/countries/england-1200x630.png", region: "Avrupa" },
@@ -936,14 +932,18 @@ function LineupBuilder({
   avgAge: number;
   avgRating: number;
 }) {
-  const [selectedSlot, setSelectedSlot] = useState<string>(lineupSlots[0].id);
+  const [formationName, setFormationName] = useState("4-3-3");
+  const slots = useMemo(() => buildFormationSlots(formationName), [formationName]);
+  const [selectedSlot, setSelectedSlot] = useState<string>(slots[0].id);
   const [lineupQuery, setLineupQuery] = useState("");
   const [poolPlayers, setPoolPlayers] = useState<PlayerProfile[]>([]);
   const [remoteSearchPlayers, setRemoteSearchPlayers] = useState<PlayerProfile[]>([]);
   const [poolLoading, setPoolLoading] = useState(false);
   const [poolError, setPoolError] = useState<string | null>(null);
   const usedIds = Object.values(lineup).filter(Boolean) as number[];
-  const selectedSlotMeta = lineupSlots.find((slot) => slot.id === selectedSlot) || lineupSlots[0];
+  const selectedSlotMeta = slots.find((slot) => slot.id === selectedSlot) || slots[0];
+  const selectedRoleKey = tacticalRoleKey(selectedSlotMeta.label);
+  const selectedRolePresets = PLAYER_ROLE_PRESETS[selectedRoleKey] || [];
   const allPoolPlayers = useMemo(
     () => mergePlayers([...players, ...poolPlayers, ...remoteSearchPlayers]),
     [players, poolPlayers, remoteSearchPlayers]
@@ -997,7 +997,7 @@ function LineupBuilder({
 
       try {
         const response = await fetch(
-          `/api/football/player-search?q=${encodeURIComponent(lineupQuery.trim())}&limit=35`,
+          `/api/football/player-search?q=${encodeURIComponent(lineupQuery.trim())}&position=${selectedSlotMeta.role}&limit=35`,
           { signal: controller.signal }
         );
         const data = (await response.json()) as PlayerSearchPayload;
@@ -1024,7 +1024,26 @@ function LineupBuilder({
       controller.abort();
       window.clearTimeout(timer);
     };
-  }, [lineupQuery]);
+  }, [lineupQuery, selectedSlotMeta.role]);
+
+  useEffect(() => {
+    if (!slots.some((slot) => slot.id === selectedSlot)) {
+      setSelectedSlot(slots[0].id);
+    }
+  }, [selectedSlot, slots]);
+
+  const changeFormation = (nextFormation: string) => {
+    const nextSlots = buildFormationSlots(nextFormation);
+    setFormationName(nextFormation);
+    setSelectedSlot(nextSlots[0].id);
+    setLineup((current) => {
+      const next: Record<string, number | null> = {};
+      for (const slot of nextSlots) {
+        next[slot.id] = current[slot.id] || null;
+      }
+      return next;
+    });
+  };
 
   const searchablePlayers = allPoolPlayers
     .filter((player) => {
@@ -1057,7 +1076,7 @@ function LineupBuilder({
   const assignPlayerToSlot = (slotId: string, playerId: number | null) => {
     setLineup((current) => {
       const next = { ...current };
-      const slotMeta = lineupSlots.find((slot) => slot.id === slotId) || selectedSlotMeta;
+      const slotMeta = slots.find((slot) => slot.id === slotId) || selectedSlotMeta;
       const targetPlayer = allPoolPlayers.find((player) => player.id === playerId);
 
       if (playerId && slotMeta.role === "G" && targetPlayer?.position !== "G") {
@@ -1079,7 +1098,7 @@ function LineupBuilder({
   const assignPlayerToSelectedSlot = (playerId: number | null) => assignPlayerToSlot(selectedSlot, playerId);
   const clearLineup = () => {
     setLineup(
-      lineupSlots.reduce<Record<string, number | null>>((acc, slot) => {
+      slots.reduce<Record<string, number | null>>((acc, slot) => {
         acc[slot.id] = null;
         return acc;
       }, {})
@@ -1094,11 +1113,12 @@ function LineupBuilder({
         <div className="penalty-box bottom" />
         <div className="formation-menu">
           <span>Dizilis</span>
-          <select>
-            <option>4-3-3 Attack</option>
-            <option>4-4-2 Classic</option>
-            <option>3-5-2 Fluid</option>
-            <option>4-2-3-1 Deep</option>
+          <select value={formationName} onChange={(event) => changeFormation(event.target.value)}>
+            {EAFC_FORMATIONS.map((formation) => (
+              <option key={formation.name} value={formation.name}>
+                {formation.name}
+              </option>
+            ))}
           </select>
         </div>
         <div className="lineup-board-head">
@@ -1121,7 +1141,7 @@ function LineupBuilder({
           </button>
         </div>
         <div className="slots-grid">
-          {lineupSlots.map((slot) => {
+          {slots.map((slot) => {
             const player = allPoolPlayers.find((item) => item.id === lineup[slot.id]);
             return (
               <LineupSlot
@@ -1145,6 +1165,7 @@ function LineupBuilder({
             <div>
               <span className="kicker">OYUNCU HAVUZU</span>
               <h2>{selectedSlotMeta.label}</h2>
+              <p>{POSITION_LABELS[selectedSlotMeta.label] || "Mevki"} / {selectedRolePresets[0] || "Serbest rol"}</p>
             </div>
             <Search size={20} />
           </div>
@@ -1359,7 +1380,7 @@ function LineupSlot({
   onSelectSlot,
   onDropPlayer
 }: {
-  slot: (typeof lineupSlots)[number];
+  slot: TacticalSlot;
   player: PlayerProfile | null;
   selected: boolean;
   onSelectSlot: () => void;
