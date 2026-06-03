@@ -11,6 +11,11 @@ type SupabaseCacheRecord<T> = {
   last_change_summary?: unknown;
   last_refreshed_at?: string;
   source?: string;
+  tweet_id?: string;
+  category?: string;
+  source_account?: string;
+  source_url?: string;
+  published_at?: string;
 };
 
 const SUPABASE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
@@ -89,6 +94,33 @@ export async function listSupabaseCacheRows<T>(table: string, limit = 500) {
 
     if (!response.ok) return [];
     return (await response.json()) as Array<SupabaseCacheRecord<T>>;
+  } catch {
+    return [];
+  }
+}
+
+export async function listSupabaseRows<T>(
+  table: string,
+  select = "*",
+  order = "updated_at.desc",
+  limit = 50
+) {
+  const config = supabaseConfig();
+  if (!config) return [];
+
+  try {
+    const url = new URL(`${config.url}/rest/v1/${table}`);
+    url.searchParams.set("select", select);
+    url.searchParams.set("order", order);
+    url.searchParams.set("limit", String(limit));
+
+    const response = await fetch(url, {
+      headers: supabaseHeaders(config.key),
+      cache: "no-store"
+    });
+
+    if (!response.ok) return [];
+    return (await response.json()) as T[];
   } catch {
     return [];
   }

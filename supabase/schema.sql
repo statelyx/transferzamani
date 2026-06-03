@@ -89,3 +89,45 @@ for all
 to service_role
 using (true)
 with check (true);
+
+create table if not exists public.news_cache (
+  cache_key text primary key,
+  tweet_id text unique,
+  category text,
+  league_name text,
+  source_account text,
+  source_url text,
+  published_at timestamptz,
+  payload jsonb not null,
+  source text,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.news_cache add column if not exists tweet_id text;
+alter table public.news_cache add column if not exists category text;
+alter table public.news_cache add column if not exists league_name text;
+alter table public.news_cache add column if not exists source_account text;
+alter table public.news_cache add column if not exists source_url text;
+alter table public.news_cache add column if not exists published_at timestamptz;
+alter table public.news_cache add column if not exists source text;
+
+create unique index if not exists news_cache_tweet_id_idx on public.news_cache (tweet_id);
+create index if not exists news_cache_category_idx on public.news_cache (category);
+create index if not exists news_cache_published_at_idx on public.news_cache (published_at desc);
+
+alter table public.news_cache enable row level security;
+
+drop policy if exists "Public read news cache" on public.news_cache;
+create policy "Public read news cache"
+on public.news_cache
+for select
+to anon, authenticated
+using (true);
+
+drop policy if exists "Service role writes news cache" on public.news_cache;
+create policy "Service role writes news cache"
+on public.news_cache
+for all
+to service_role
+using (true)
+with check (true);

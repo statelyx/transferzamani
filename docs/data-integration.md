@@ -9,8 +9,10 @@ Tam takim, kadro, oyuncu fotografi, lig fiksturu ve transfer/haber akisi icin ca
 - `RAPIDAPI_HOST`: Baska RapidAPI entegrasyonlari icin kullanilan eski/genel host. SofaScore icin zorunlu degil.
 - `SOFASCORE_RAPIDAPI_HOST`: SofaScore RapidAPI host degeri. Bu proje icin: `sofascore.p.rapidapi.com`.
 - `FOOTBALLSERVICE_RAPIDAPI_HOST`: FootballService RapidAPI host degeri. Bu proje icin: `footballservice1.p.rapidapi.com`.
+- `TWITTER_API_RAPIDAPI_HOST`: Twitter API RapidAPI host degeri. Bu proje icin: `twitter-api45.p.rapidapi.com`.
 - `SOFASCORE_RATE_LIMIT_MS`: Server-side istekler arasindaki minimum bekleme. Varsayilan: `350`.
 - `FOOTBALLSERVICE_RATE_LIMIT_MS`: FootballService istekleri arasindaki minimum bekleme. Varsayilan: `500`.
+- `TWITTER_API_RATE_LIMIT_MS`: Twitter API istekleri arasindaki minimum bekleme. Varsayilan: `900`.
 - `NEXT_PUBLIC_SUPABASE_URL`: Supabase proje URL'i.
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: Supabase publishable key. Browser tarafinda kullanilabilir.
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Eski anon public JWT. Geriye donuk destek icin opsiyonel.
@@ -47,6 +49,10 @@ Tam takim, kadro, oyuncu fotografi, lig fiksturu ve transfer/haber akisi icin ca
 - RapidAPI provider client: `lib/providers/rapidapi-provider.ts`
 - FootballService provider: `lib/providers/footballservice.ts`
 - FootballService proxy route: `app/api/providers/footballservice/[endpoint]/route.ts`
+- Twitter API provider: `lib/providers/twitter-api.ts`
+- Twitter haber normalizer: `lib/news/twitter-news.ts`
+- Twitter haber cron route'u: `app/api/cron/update-twitter-news/route.ts`
+- Haber liste route'u: `app/api/news/route.ts`
 - Supabase tablo SQL'i: `supabase/schema.sql`
 
 Vercel Cron `vercel.json` icinde `0 0 * * *` olarak tanimli. Bu Turkiye saatiyle 03:00'e denk gelir.

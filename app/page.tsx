@@ -32,6 +32,20 @@ import { useEffect, useMemo, useState } from "react";
 
 type ViewKey = "home" | "profile" | "lineup" | "scout";
 
+type NewsCard = {
+  id: string;
+  tweetId: string;
+  category: "transfer" | "istatistik" | "haber";
+  league: string;
+  title: string;
+  summary: string;
+  sourceAccount: string;
+  sourceName: string;
+  sourceUrl: string;
+  publishedAt: string;
+  imageUrl: string | null;
+};
+
 const positions = [
   { key: "ALL", label: "TUMU" },
   { key: "G", label: "GK" },
@@ -148,6 +162,7 @@ export default function Home() {
   const [remoteSquad, setRemoteSquad] = useState<PlayerProfile[]>([]);
   const [squadLoading, setSquadLoading] = useState(false);
   const [squadError, setSquadError] = useState<string | null>(null);
+  const [news, setNews] = useState<NewsCard[]>([]);
 
   async function loadData() {
     setLoading(true);
@@ -173,6 +188,13 @@ export default function Home() {
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/news")
+      .then((response) => response.json())
+      .then((payload) => setNews(payload.news || []))
+      .catch(() => setNews([]));
   }, []);
 
   const gsPlayers = data?.players || [];
@@ -303,6 +325,7 @@ export default function Home() {
             squadLoading={squadLoading}
             squadError={squadError}
             selectedTeamSquad={selectedTeamSquad}
+            news={news}
           />
         ) : null}
 
@@ -459,7 +482,8 @@ function HomeDashboard({
   remoteSquad,
   squadLoading,
   squadError,
-  selectedTeamSquad
+  selectedTeamSquad,
+  news
 }: {
   data: GalatasarayPayload | null;
   players: PlayerProfile[];
@@ -477,6 +501,7 @@ function HomeDashboard({
   squadLoading: boolean;
   squadError: string | null;
   selectedTeamSquad: PlayerProfile[];
+  news: NewsCard[];
 }) {
   const topPlayers = [...players].sort((a, b) => b.metrics.future - a.metrics.future).slice(0, 4);
   const [countriesOpen, setCountriesOpen] = useState(false);
@@ -622,6 +647,27 @@ function HomeDashboard({
           </button>
         </aside>
       </section>
+
+      <section className="section-head">
+        <div>
+          <span className="kicker">TURKCE FUTBOL GUNDEMI</span>
+          <h2>Kaynakli Haber Akisi</h2>
+        </div>
+        <span className="muted-count">{news.length} haber</span>
+      </section>
+      <div className="news-grid">
+        {(news.length ? news : []).slice(0, 6).map((item) => (
+          <a className={`news-card ${item.category}`} href={item.sourceUrl} key={item.id} rel="noreferrer" target="_blank">
+            {item.imageUrl ? <img src={item.imageUrl} alt="" /> : <span className="news-fallback">{item.category}</span>}
+            <span className="news-meta">
+              <b>{item.league}</b>
+              <em>@{item.sourceAccount}</em>
+            </span>
+            <strong>{item.title}</strong>
+            <p>{item.summary}</p>
+          </a>
+        ))}
+      </div>
 
       <section className="section-head">
         <div>
