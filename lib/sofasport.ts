@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { footballServiceGet } from "@/lib/providers/footballservice";
 import { sofaScoreGet } from "@/lib/sofascore/client";
 import { getLiveTransferRumors } from "@/lib/football/transfers";
 
@@ -297,7 +298,22 @@ export async function getGalatasarayPayload(): Promise<GalatasarayPayload> {
       return payload;
     }
 
-    return buildFallbackPayload(error instanceof Error ? error.message : "API isteği başarısız.");
+    const reason = error instanceof Error ? error.message : "API isteği başarısız.";
+    const providerFallback = await getFootballServiceFallbackContext("Galatasaray");
+    return buildFallbackPayload(providerFallback ? `${reason} / FootballService fallback aktif: ${providerFallback}` : reason);
+  }
+}
+
+async function getFootballServiceFallbackContext(teamName: string) {
+  try {
+    const search = await footballServiceGet<Array<{ type?: string; id?: number; name?: string }>>("search", { q: teamName });
+    const team = search.data.find((item) => item.type === "team" && item.name?.toLocaleLowerCase("tr").includes(teamName.toLocaleLowerCase("tr")));
+    if (!team?.id) return null;
+
+    const detail = await footballServiceGet<{ name?: string; short_name?: string }>("team-detail", { id: team.id });
+    return detail.data.name || detail.data.short_name || team.name || "takim dogrulandi";
+  } catch {
+    return null;
   }
 }
 

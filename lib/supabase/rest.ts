@@ -32,7 +32,7 @@ type SupabaseCacheRecord<T> = {
 
 const SUPABASE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
-export async function readSupabaseCache<T>(table: string, cacheKey: string) {
+export async function readSupabaseCache<T>(table: string, cacheKey: string, maxAgeMs = SUPABASE_CACHE_TTL_MS) {
   const config = supabaseConfig();
   if (!config) return null;
 
@@ -55,7 +55,7 @@ export async function readSupabaseCache<T>(table: string, cacheKey: string) {
     if (!row?.payload || !row.updated_at) return null;
 
     const age = Date.now() - new Date(row.updated_at).getTime();
-    if (age > SUPABASE_CACHE_TTL_MS) return null;
+    if (age > maxAgeMs) return null;
 
     return row.payload;
   } catch {

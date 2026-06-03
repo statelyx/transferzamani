@@ -4,6 +4,7 @@ import { compareRosterPlayers, normalizePlayer, type PlayerProfile } from "@/lib
 import { readSupabaseCache, writeSupabaseCache } from "@/lib/supabase/rest";
 
 const TEAM_SQUAD_TABLE = "team_squad_cache";
+const STALE_TEAM_SQUAD_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 type SearchResponse = {
   results?: Array<{
@@ -64,7 +65,26 @@ export async function getTeamSquad(team: string, league = "global") {
     return { ...cached, source: "supabase" as const };
   }
 
-  return refreshTeamSquad(team, league, cached);
+  try {
+    return await refreshTeamSquad(team, league, cached);
+  } catch (error) {
+    const staleCached = await readSupabaseCache<TeamSquadPayload>(
+      TEAM_SQUAD_TABLE,
+      cacheKey,
+      STALE_TEAM_SQUAD_TTL_MS
+    );
+
+    if (staleCached && teamNameMatches(staleCached.team.name, team)) {
+      return {
+        ...staleCached,
+        source: "supabase" as const,
+        generatedAt: staleCached.generatedAt,
+        changeSummary: staleCached.changeSummary
+      };
+    }
+
+    throw error;
+  }
 }
 
 export async function refreshTeamSquad(team: string, league = "global", previous?: TeamSquadPayload | null) {

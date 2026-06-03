@@ -15,6 +15,10 @@ export async function GET(
 
   try {
     const query = Object.fromEntries(request.nextUrl.searchParams.entries());
+    if (endpoint === "search" && query.search && !query.q) {
+      query.q = query.search;
+      delete query.search;
+    }
     const result = await footballServiceGet(endpoint, query);
     return NextResponse.json(result, {
       headers: { "Cache-Control": "s-maxage=300, stale-while-revalidate=86400" }

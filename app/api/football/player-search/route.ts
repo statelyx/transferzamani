@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { masterPlayerToProfile, searchPlayersMaster, type MasterPlayer } from "@/lib/football/player-master";
+import { footballServiceGet } from "@/lib/providers/footballservice";
 import { normalizePlayer, type PlayerProfile } from "@/lib/sofasport";
 import { sofaScoreGet, SofaScoreApiError } from "@/lib/sofascore/client";
 import type { SofaScorePlayer } from "@/lib/sofascore/types";
@@ -64,12 +65,16 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Oyuncu aramasi alinamadi.";
     const status = error instanceof SofaScoreApiError && error.status ? error.status : 500;
+    const footballServiceResults = await searchFootballService(query);
 
     if (masterPlayers.length > 0) {
       return NextResponse.json(
         {
           warning: message,
           liveStatus: status,
+          providerFallbacks: {
+            footballservice: footballServiceResults
+          },
           players: masterPlayers.map(masterPlayerToProfile).slice(0, limit),
           source: "players-master",
           masterCount: masterPlayers.length
@@ -79,6 +84,22 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({ error: message, players: [] }, { status });
+  }
+}
+
+async function searchFootballService(query: string) {
+  try {
+    const result = await footballServiceGet<unknown[]>("search", { q: query });
+    return {
+      ok: true,
+      count: Array.isArray(result.data) ? result.data.length : 0,
+      source: result.source
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "FootballService fallback basarisiz."
+    };
   }
 }
 
