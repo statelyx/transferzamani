@@ -537,11 +537,11 @@ function PlayerHero({
 
 function PlayerAnalytics({ player }: { player: PlayerProfile }) {
   const metrics = [
-    { label: "Piyasa", value: player.metrics.market },
-    { label: "Takip", value: player.metrics.attention },
-    { label: "Gelecek", value: player.metrics.future },
-    { label: "Kontrat", value: player.metrics.contract },
-    { label: "Fizik", value: player.metrics.physical }
+    { label: "Hucum", value: player.attributes.attack },
+    { label: "Defans", value: player.attributes.defense },
+    { label: "Pas", value: player.attributes.passing },
+    { label: "Fizik", value: player.attributes.physical },
+    { label: "Form", value: player.attributes.form }
   ];
 
   return (
@@ -564,7 +564,7 @@ function PlayerAnalytics({ player }: { player: PlayerProfile }) {
       <div className="season-table pitch-card">
         <div className="table-head">
           <h3>Sezon Istatistikleri</h3>
-          <span>Canli profil sinyalleri</span>
+          <span>Pozisyon bazli oyuncu attribute'lari</span>
         </div>
         <table>
           <thead>
@@ -618,6 +618,7 @@ function LineupBuilder({
   const normalizedLineupQuery = normalize(lineupQuery);
   const searchablePlayers = players
     .filter((player) => {
+      if (selectedSlotMeta.role === "G" && player.position !== "G") return false;
       if (!normalizedLineupQuery) return true;
 
       return (
@@ -628,8 +629,7 @@ function LineupBuilder({
       );
     })
     .sort((a, b) => {
-      const roleScore =
-        (b.position === selectedSlotMeta.role ? 1 : 0) - (a.position === selectedSlotMeta.role ? 1 : 0);
+      const roleScore = roleFitScore(b, selectedSlotMeta.role) - roleFitScore(a, selectedSlotMeta.role);
       if (roleScore) return roleScore;
 
       return b.metrics.future - a.metrics.future;
@@ -638,6 +638,11 @@ function LineupBuilder({
   const assignPlayerToSelectedSlot = (playerId: number | null) => {
     setLineup((current) => {
       const next = { ...current };
+      const targetPlayer = players.find((player) => player.id === playerId);
+
+      if (playerId && selectedSlotMeta.role === "G" && targetPlayer?.position !== "G") {
+        return current;
+      }
 
       if (playerId) {
         for (const slotId of Object.keys(next)) {
@@ -749,7 +754,10 @@ function LineupBuilder({
                   <strong>{player.name}</strong>
                   <em>{player.team.name} / {player.positionLabel} / {player.country}</em>
                 </span>
-                <b>{usedIds.includes(player.id) && lineup[selectedSlot] !== player.id ? "TASI" : player.marketValueLabel}</b>
+                <b>
+                  <span>{roleFitScore(player, selectedSlotMeta.role) ? "ONERILEN" : "SERBEST"}</span>
+                  {usedIds.includes(player.id) && lineup[selectedSlot] !== player.id ? "TASI" : player.marketValueLabel}
+                </b>
               </button>
             ))}
           </div>
@@ -1169,6 +1177,7 @@ function Radar({ metrics }: { metrics: number[] }) {
       <span>PAS</span>
       <span>FIZIK</span>
       <span>DEFANS</span>
+      <span>FORM</span>
     </div>
   );
 }
@@ -1255,6 +1264,15 @@ function seedLineup(current: Record<string, number | null>, players: PlayerProfi
     acc[slot.id] = picks[index]?.id || null;
     return acc;
   }, {});
+}
+
+function roleFitScore(player: PlayerProfile, role: string) {
+  if (role === "G") return player.position === "G" ? 2 : 0;
+  if (player.position === role) return 2;
+  if (role === "D" && player.position === "M") return 1;
+  if (role === "M" && (player.position === "D" || player.position === "F")) return 1;
+  if (role === "F" && player.position === "M") return 1;
+  return 0;
 }
 
 function sortRosterPlayers(a: PlayerProfile, b: PlayerProfile) {

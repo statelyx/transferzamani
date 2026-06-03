@@ -149,6 +149,13 @@ export type PlayerProfile = {
     contract: number;
     physical: number;
   };
+  attributes: {
+    attack: number;
+    defense: number;
+    passing: number;
+    physical: number;
+    form: number;
+  };
 };
 
 export type TeamEvent = {
@@ -216,7 +223,7 @@ export type GalatasarayPayload = {
 const API_BASE = "https://sofasport.p.rapidapi.com";
 const CACHE_TTL_MS = 30 * 60 * 1000;
 const STALE_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const CACHE_VERSION = 4;
+const CACHE_VERSION = 5;
 let memoryCache: { payload: GalatasarayPayload; timestamp: number } | null = null;
 
 async function sofaFetch<T>(path: string): Promise<T> {
@@ -475,6 +482,14 @@ function normalizePlayer(
   const age = calculateAge(player.dateOfBirthTimestamp, player.dateOfBirth);
   const contractMonthsRemaining = calculateMonthsRemaining(player.contractUntilTimestamp);
   const marketValue = player.proposedMarketValueRaw?.value ?? player.proposedMarketValue ?? null;
+  const profileMetrics = buildProfileMetrics({
+    age,
+    height: player.height,
+    marketValue,
+    userCount: player.userCount || 0,
+    contractMonthsRemaining,
+    position: player.position
+  });
 
   return {
     id: player.id,
@@ -514,13 +529,8 @@ function normalizePlayer(
         player.team?.tournament?.name ||
         "Trendyol Süper Lig"
     },
-    metrics: {
-      market: metricFromMarketValue(marketValue),
-      attention: clamp(Math.round(Math.log10((player.userCount || 1) + 1) * 17), 8, 100),
-      future: futureMetric(age, marketValue),
-      contract: contractMetric(contractMonthsRemaining),
-      physical: physicalMetric(player.height, player.position)
-    }
+    metrics: profileMetrics.metrics,
+    attributes: profileMetrics.attributes
   };
 }
 
@@ -991,6 +1001,50 @@ function formatMarketValue(value: number | null) {
   }
 
   return `€${new Intl.NumberFormat("tr-TR").format(value)}`;
+}
+
+function buildProfileMetrics(input: {
+  age: number | null;
+  height?: number;
+  marketValue: number | null;
+  userCount: number;
+  contractMonthsRemaining: number | null;
+  position?: string;
+}) {
+  const market = metricFromMarketValue(input.marketValue);
+  const attention = clamp(Math.round(Math.log10(input.userCount + 1) * 17), 8, 100);
+  const future = futureMetric(input.age, input.marketValue);
+  const contract = contractMetric(input.contractMonthsRemaining);
+  const physical = physicalMetric(input.height, input.position);
+  const quality = clamp(Math.round(market * 0.56 + future * 0.28 + attention * 0.16), 10, 96);
+  const position = input.position || "NA";
+
+  const templates: Record<string, { attack: number; defense: number; passing: number; physical: number; form: number }> = {
+    G: { attack: 12, defense: 82, passing: 54, physical: 74, form: 66 },
+    D: { attack: 30, defense: 78, passing: 56, physical: 72, form: 64 },
+    M: { attack: 58, defense: 58, passing: 78, physical: 64, form: 66 },
+    F: { attack: 82, defense: 28, passing: 58, physical: 66, form: 68 },
+    NA: { attack: 50, defense: 50, passing: 50, physical: 50, form: 50 }
+  };
+  const base = templates[position] || templates.NA;
+  const lift = (baseValue: number, weight = 0.34) => clamp(Math.round(baseValue * (1 - weight) + quality * weight), 8, 96);
+
+  return {
+    metrics: {
+      market,
+      attention,
+      future,
+      contract,
+      physical
+    },
+    attributes: {
+      attack: lift(base.attack, position === "F" ? 0.42 : 0.28),
+      defense: lift(base.defense, position === "D" || position === "G" ? 0.42 : 0.26),
+      passing: lift(base.passing, position === "M" ? 0.42 : 0.3),
+      physical,
+      form: clamp(Math.round(base.form * 0.4 + quality * 0.42 + contract * 0.18), 12, 96)
+    }
+  };
 }
 
 function metricFromMarketValue(value: number | null) {

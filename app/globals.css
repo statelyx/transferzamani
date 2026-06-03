@@ -912,6 +912,11 @@ h3,
   left: 0;
 }
 
+.radar-wrap span:nth-of-type(5) {
+  right: 9%;
+  bottom: 12%;
+}
+
 .metric-row {
   display: grid;
   gap: 7px;
@@ -1390,6 +1395,14 @@ td:nth-child(2) {
   color: var(--primary);
   font-size: 0.72rem;
   white-space: nowrap;
+}
+
+.lineup-search-results b span {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--muted);
+  font-size: 0.6rem;
+  letter-spacing: 0.06em;
 }
 
 .lineup-workspace {
