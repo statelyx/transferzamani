@@ -131,3 +131,50 @@ for all
 to service_role
 using (true)
 with check (true);
+
+create table if not exists public.player_pool_cache (
+  cache_key text primary key,
+  player_id bigint unique,
+  player_name text,
+  team_id bigint,
+  team_name text,
+  country_name text,
+  league_name text,
+  position text,
+  market_value bigint,
+  payload jsonb not null,
+  source text,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.player_pool_cache add column if not exists player_id bigint;
+alter table public.player_pool_cache add column if not exists player_name text;
+alter table public.player_pool_cache add column if not exists team_id bigint;
+alter table public.player_pool_cache add column if not exists team_name text;
+alter table public.player_pool_cache add column if not exists country_name text;
+alter table public.player_pool_cache add column if not exists league_name text;
+alter table public.player_pool_cache add column if not exists position text;
+alter table public.player_pool_cache add column if not exists market_value bigint;
+alter table public.player_pool_cache add column if not exists source text;
+
+create unique index if not exists player_pool_cache_player_id_idx on public.player_pool_cache (player_id);
+create index if not exists player_pool_cache_position_idx on public.player_pool_cache (position);
+create index if not exists player_pool_cache_market_value_idx on public.player_pool_cache (market_value desc);
+create index if not exists player_pool_cache_team_id_idx on public.player_pool_cache (team_id);
+
+alter table public.player_pool_cache enable row level security;
+
+drop policy if exists "Public read player pool cache" on public.player_pool_cache;
+create policy "Public read player pool cache"
+on public.player_pool_cache
+for select
+to anon, authenticated
+using (true);
+
+drop policy if exists "Service role writes player pool cache" on public.player_pool_cache;
+create policy "Service role writes player pool cache"
+on public.player_pool_cache
+for all
+to service_role
+using (true)
+with check (true);

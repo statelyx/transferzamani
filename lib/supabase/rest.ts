@@ -16,6 +16,10 @@ type SupabaseCacheRecord<T> = {
   source_account?: string;
   source_url?: string;
   published_at?: string;
+  player_id?: number;
+  player_name?: string;
+  position?: string;
+  market_value?: number | null;
 };
 
 const SUPABASE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
@@ -32,7 +36,8 @@ export async function readSupabaseCache<T>(table: string, cacheKey: string) {
 
     const response = await fetch(url, {
       headers: supabaseHeaders(config.key),
-      cache: "no-store"
+      cache: "no-store",
+      signal: AbortSignal.timeout(8_000)
     });
 
     if (!response.ok) return null;
@@ -67,6 +72,7 @@ export async function writeSupabaseCache<T>(
         ...supabaseHeaders(config.key),
         Prefer: "resolution=merge-duplicates,return=minimal"
       },
+      signal: AbortSignal.timeout(8_000),
       body: JSON.stringify({
         ...row,
         updated_at: row.updated_at || new Date().toISOString()
@@ -89,7 +95,8 @@ export async function listSupabaseCacheRows<T>(table: string, limit = 500) {
 
     const response = await fetch(url, {
       headers: supabaseHeaders(config.key),
-      cache: "no-store"
+      cache: "no-store",
+      signal: AbortSignal.timeout(8_000)
     });
 
     if (!response.ok) return [];
@@ -116,7 +123,8 @@ export async function listSupabaseRows<T>(
 
     const response = await fetch(url, {
       headers: supabaseHeaders(config.key),
-      cache: "no-store"
+      cache: "no-store",
+      signal: AbortSignal.timeout(8_000)
     });
 
     if (!response.ok) return [];

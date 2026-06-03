@@ -46,6 +46,11 @@ type NewsCard = {
   imageUrl: string | null;
 };
 
+type PlayerSearchPayload = {
+  players: PlayerProfile[];
+  error?: string;
+};
+
 const positions = [
   { key: "ALL", label: "TUMU" },
   { key: "G", label: "GK" },
@@ -933,11 +938,95 @@ function LineupBuilder({
 }) {
   const [selectedSlot, setSelectedSlot] = useState<string>(lineupSlots[0].id);
   const [lineupQuery, setLineupQuery] = useState("");
+  const [poolPlayers, setPoolPlayers] = useState<PlayerProfile[]>([]);
+  const [remoteSearchPlayers, setRemoteSearchPlayers] = useState<PlayerProfile[]>([]);
+  const [poolLoading, setPoolLoading] = useState(false);
+  const [poolError, setPoolError] = useState<string | null>(null);
   const usedIds = Object.values(lineup).filter(Boolean) as number[];
   const selectedSlotMeta = lineupSlots.find((slot) => slot.id === selectedSlot) || lineupSlots[0];
-  const selectedSlotPlayer = players.find((player) => player.id === lineup[selectedSlot]);
+  const allPoolPlayers = useMemo(
+    () => mergePlayers([...players, ...poolPlayers, ...remoteSearchPlayers]),
+    [players, poolPlayers, remoteSearchPlayers]
+  );
+  const selectedSlotPlayer = allPoolPlayers.find((player) => player.id === lineup[selectedSlot]);
   const normalizedLineupQuery = normalize(lineupQuery);
-  const searchablePlayers = players
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadPool() {
+      setPoolLoading(true);
+      setPoolError(null);
+
+      try {
+        const response = await fetch(`/api/football/player-pool?position=${selectedSlotMeta.role}&limit=90`);
+        const data = (await response.json()) as PlayerSearchPayload;
+        if (!active) return;
+
+        if (!response.ok) {
+          setPoolError(data.error || "Oyuncu havuzu okunamadi.");
+          return;
+        }
+
+        setPoolPlayers(data.players || []);
+      } catch (error) {
+        if (active) setPoolError(error instanceof Error ? error.message : "Oyuncu havuzu okunamadi.");
+      } finally {
+        if (active) setPoolLoading(false);
+      }
+    }
+
+    loadPool();
+    return () => {
+      active = false;
+    };
+  }, [selectedSlotMeta.role]);
+
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+
+    async function searchRemotePlayers() {
+      if (lineupQuery.trim().length < 2) {
+        setRemoteSearchPlayers([]);
+        return;
+      }
+
+      setPoolLoading(true);
+      setPoolError(null);
+
+      try {
+        const response = await fetch(
+          `/api/football/player-search?q=${encodeURIComponent(lineupQuery.trim())}&limit=35`,
+          { signal: controller.signal }
+        );
+        const data = (await response.json()) as PlayerSearchPayload;
+        if (!active) return;
+
+        if (!response.ok) {
+          setPoolError(data.error || "Canli oyuncu aramasi basarisiz.");
+          return;
+        }
+
+        setRemoteSearchPlayers(data.players || []);
+      } catch (error) {
+        if (active && !(error instanceof DOMException && error.name === "AbortError")) {
+          setPoolError(error instanceof Error ? error.message : "Canli oyuncu aramasi basarisiz.");
+        }
+      } finally {
+        if (active) setPoolLoading(false);
+      }
+    }
+
+    const timer = window.setTimeout(searchRemotePlayers, 280);
+    return () => {
+      active = false;
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [lineupQuery]);
+
+  const searchablePlayers = allPoolPlayers
     .filter((player) => {
       if (selectedSlotMeta.role === "G" && player.position !== "G") return false;
       if (!normalizedLineupQuery) return true;
@@ -959,30 +1048,35 @@ function LineupBuilder({
       const roleScore = roleFitScore(b, selectedSlotMeta.role) - roleFitScore(a, selectedSlotMeta.role);
       if (roleScore) return roleScore;
 
+      const marketOrder = (b.marketValue || 0) - (a.marketValue || 0);
+      if (marketOrder) return marketOrder;
+
       return b.metrics.future - a.metrics.future;
     });
 
-  const assignPlayerToSelectedSlot = (playerId: number | null) => {
+  const assignPlayerToSlot = (slotId: string, playerId: number | null) => {
     setLineup((current) => {
       const next = { ...current };
-      const targetPlayer = players.find((player) => player.id === playerId);
+      const slotMeta = lineupSlots.find((slot) => slot.id === slotId) || selectedSlotMeta;
+      const targetPlayer = allPoolPlayers.find((player) => player.id === playerId);
 
-      if (playerId && selectedSlotMeta.role === "G" && targetPlayer?.position !== "G") {
+      if (playerId && slotMeta.role === "G" && targetPlayer?.position !== "G") {
         return current;
       }
 
       if (playerId) {
         for (const slotId of Object.keys(next)) {
-          if (slotId !== selectedSlot && next[slotId] === playerId) {
+          if (slotId !== slotMeta.id && next[slotId] === playerId) {
             next[slotId] = null;
           }
         }
       }
 
-      next[selectedSlot] = playerId;
+      next[slotMeta.id] = playerId;
       return next;
     });
   };
+  const assignPlayerToSelectedSlot = (playerId: number | null) => assignPlayerToSlot(selectedSlot, playerId);
   const clearLineup = () => {
     setLineup(
       lineupSlots.reduce<Record<string, number | null>>((acc, slot) => {
@@ -1028,7 +1122,7 @@ function LineupBuilder({
         </div>
         <div className="slots-grid">
           {lineupSlots.map((slot) => {
-            const player = players.find((item) => item.id === lineup[slot.id]);
+            const player = allPoolPlayers.find((item) => item.id === lineup[slot.id]);
             return (
               <LineupSlot
                 key={slot.id}
@@ -1036,6 +1130,10 @@ function LineupBuilder({
                 player={player || null}
                 selected={selectedSlot === slot.id}
                 onSelectSlot={() => setSelectedSlot(slot.id)}
+                onDropPlayer={(playerId) => {
+                  setSelectedSlot(slot.id);
+                  assignPlayerToSlot(slot.id, playerId);
+                }}
               />
             );
           })}
@@ -1066,14 +1164,20 @@ function LineupBuilder({
           ) : null}
           <div className="lineup-scout-tabs">
             <span className="active">Uygun</span>
-            <span>{players.length} oyuncu</span>
+            <span>{poolLoading ? "Araniyor" : `${searchablePlayers.length} oyuncu`}</span>
           </div>
+          {poolError ? <div className="lineup-pool-error">{poolError}</div> : null}
           <div className="lineup-search-results">
-            {searchablePlayers.slice(0, 10).map((player) => (
+            {searchablePlayers.slice(0, 18).map((player) => (
               <button
                 className={lineup[selectedSlot] === player.id ? "active" : ""}
+                draggable
                 key={player.id}
                 type="button"
+                onDragStart={(event) => {
+                  event.dataTransfer.setData("text/plain", String(player.id));
+                  event.dataTransfer.effectAllowed = "move";
+                }}
                 onClick={() => assignPlayerToSelectedSlot(player.id)}
               >
                 <PlayerAvatar player={player} size="sm" />
@@ -1087,6 +1191,11 @@ function LineupBuilder({
                 </b>
               </button>
             ))}
+            {!poolLoading && searchablePlayers.length === 0 ? (
+              <div className="lineup-empty-state">
+                Oyuncu bulunamadi. En az 2 harf yazarak canli global aramayi deneyin.
+              </div>
+            ) : null}
           </div>
         </div>
         <div className="glass-panel">
@@ -1103,6 +1212,11 @@ function LineupBuilder({
           <p className={budgetDelta >= 0 ? "budget-ok" : "budget-warn"}>
             {budgetDelta >= 0 ? `${formatMoney(budgetDelta)} bosluk var` : `${formatMoney(Math.abs(budgetDelta))} butce asimi`}
           </p>
+          {budgetDelta < 0 ? (
+            <div className="budget-alert">
+              Limit asildi. Kadroyu kaydetmeden once daha dusuk piyasa degerli bir alternatif secin veya butceyi yukselterek devam edin.
+            </div>
+          ) : null}
         </div>
         <div className="squad-stats">
           <MiniStat label="ORT. YAS" value={avgAge ? avgAge.toFixed(1) : "-"} sub="Ilk 11" />
@@ -1242,15 +1356,28 @@ function LineupSlot({
   slot,
   player,
   selected,
-  onSelectSlot
+  onSelectSlot,
+  onDropPlayer
 }: {
   slot: (typeof lineupSlots)[number];
   player: PlayerProfile | null;
   selected: boolean;
   onSelectSlot: () => void;
+  onDropPlayer: (playerId: number) => void;
 }) {
   return (
-    <div className={`lineup-slot slot-${slot.id} ${selected ? "selected" : ""}`}>
+    <div
+      className={`lineup-slot slot-${slot.id} ${selected ? "selected" : ""}`}
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        const playerId = Number(event.dataTransfer.getData("text/plain"));
+        if (playerId) onDropPlayer(playerId);
+      }}
+    >
       <button type="button" onClick={onSelectSlot} aria-label={`${slot.label} slotu`}>
         <span className="shirt-frame">
           {player ? <PlayerAvatar player={player} size="lineup" /> : <Plus size={22} />}
@@ -1584,11 +1711,19 @@ function SkeletonRow() {
 function seedLineup(current: Record<string, number | null>, players: PlayerProfile[]) {
   if (Object.keys(current).length) return current;
 
-  const byRole = (role: string) => players.filter((player) => player.position === role).sort(sortRosterPlayers);
-  const picks = [...byRole("F").slice(0, 3), ...byRole("M").slice(0, 3), ...byRole("D").slice(0, 4), ...byRole("G").slice(0, 1)];
+  const pools = {
+    F: players.filter((player) => player.position === "F").sort(sortRosterPlayers),
+    M: players.filter((player) => player.position === "M").sort(sortRosterPlayers),
+    D: players.filter((player) => player.position === "D").sort(sortRosterPlayers),
+    G: players.filter((player) => player.position === "G").sort(sortRosterPlayers)
+  };
+  const usedByRole = { F: 0, M: 0, D: 0, G: 0 };
 
-  return lineupSlots.reduce<Record<string, number | null>>((acc, slot, index) => {
-    acc[slot.id] = picks[index]?.id || null;
+  return lineupSlots.reduce<Record<string, number | null>>((acc, slot) => {
+    const role = slot.role;
+    const index = usedByRole[role];
+    acc[slot.id] = pools[role][index]?.id || null;
+    usedByRole[role] += 1;
     return acc;
   }, {});
 }
@@ -1600,6 +1735,14 @@ function roleFitScore(player: PlayerProfile, role: string) {
   if (role === "M" && (player.position === "D" || player.position === "F")) return 1;
   if (role === "F" && player.position === "M") return 1;
   return 0;
+}
+
+function mergePlayers(players: PlayerProfile[]) {
+  const map = new Map<number, PlayerProfile>();
+  for (const player of players) {
+    map.set(player.id, player);
+  }
+  return Array.from(map.values());
 }
 
 function sortRosterPlayers(a: PlayerProfile, b: PlayerProfile) {

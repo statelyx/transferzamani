@@ -16,6 +16,19 @@ type SearchResponse = {
       sport?: {
         slug?: string;
       };
+      country?: {
+        name?: string;
+        alpha2?: string;
+      };
+      primaryUniqueTournament?: {
+        name?: string;
+      };
+      tournament?: {
+        name?: string;
+        uniqueTournament?: {
+          name?: string;
+        };
+      };
     };
   }>;
 };
@@ -47,15 +60,15 @@ export async function getTeamSquad(team: string, league = "global") {
   const cacheKey = teamSquadCacheKey(team, league);
   const cached = await readSupabaseCache<TeamSquadPayload>(TEAM_SQUAD_TABLE, cacheKey);
 
-  if (cached) {
+  if (cached && teamNameMatches(cached.team.name, team)) {
     return { ...cached, source: "supabase" as const };
   }
 
-  return refreshTeamSquad(team, league);
+  return refreshTeamSquad(team, league, cached);
 }
 
 export async function refreshTeamSquad(team: string, league = "global", previous?: TeamSquadPayload | null) {
-  const resolved = await resolveTeam(team);
+  const resolved = await resolveTeam(team, league);
   const squad = await sofaScoreGet<SofaScoreSquadResponse>(
     "teams/get-squad",
     { teamId: resolved.id },
@@ -116,19 +129,38 @@ function leagueCountryName(league: string) {
   return labels[league] || "Global";
 }
 
-export async function resolveTeam(team: string) {
+export async function resolveTeam(team: string, league = "global") {
   const search = await sofaScoreGet<SearchResponse>("search", { q: team });
-  const normalized = team.toLocaleLowerCase("tr");
+  const normalized = normalizeTeamName(team);
+  const country = leagueCountryName(league);
+  const tournament = leagueDisplayName(league);
   const candidates = (search.data.results || [])
     .map((item) => item.entity)
     .filter((entity) => entity?.id && entity.sport?.slug === "football");
 
-  const exact =
-    candidates.find((entity) => entity?.name?.toLocaleLowerCase("tr") === normalized) ||
-    candidates.find((entity) => entity?.shortName?.toLocaleLowerCase("tr") === normalized) ||
-    candidates[0];
+  const ranked = candidates
+    .map((entity) => {
+      const names = [entity?.name, entity?.shortName, entity?.slug].filter(Boolean).map((value) => normalizeTeamName(String(value)));
+      const exactName = names.some((value) => value === normalized);
+      const looseName = names.some((value) => value.includes(normalized) || normalized.includes(value));
+      const countryHit = normalizeTeamName(entity?.country?.name || "") === normalizeTeamName(country);
+      const tournamentNames = [
+        entity?.primaryUniqueTournament?.name,
+        entity?.tournament?.uniqueTournament?.name,
+        entity?.tournament?.name
+      ].filter(Boolean);
+      const tournamentHit = tournamentNames.some((value) => normalizeTeamName(String(value)) === normalizeTeamName(tournament));
 
-  if (!exact?.id || !exact.name) {
+      return {
+        entity,
+        score: (exactName ? 100 : 0) + (looseName ? 30 : 0) + (countryHit ? 20 : 0) + (tournamentHit ? 20 : 0)
+      };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  const exact = ranked[0]?.entity;
+
+  if (!exact?.id || !exact.name || !teamNameMatches(exact.name, team)) {
     throw new Error(`${team} icin SofaScore takim ID bulunamadi.`);
   }
 
@@ -137,6 +169,22 @@ export async function resolveTeam(team: string) {
     name: exact.name,
     slug: exact.slug
   };
+}
+
+function teamNameMatches(actual: string, expected: string) {
+  const a = normalizeTeamName(actual);
+  const e = normalizeTeamName(expected);
+  return a === e || a.includes(e) || e.includes(a);
+}
+
+function normalizeTeamName(value: string) {
+  return value
+    .toLocaleLowerCase("tr")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/\b(fc|cf|sk|fk|as|bc|sc|spor|kulubu|club|football|team)\b/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
 function buildSquadChangeSummary(previous: PlayerProfile[], current: PlayerProfile[]): SquadChangeSummary {
