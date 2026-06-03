@@ -4,8 +4,17 @@ create table if not exists public.team_squad_cache (
   league_id text,
   team_id bigint,
   payload jsonb not null,
+  player_count integer,
+  last_change_summary jsonb,
+  last_refreshed_at timestamptz,
+  source text,
   updated_at timestamptz not null default now()
 );
+
+alter table public.team_squad_cache add column if not exists player_count integer;
+alter table public.team_squad_cache add column if not exists last_change_summary jsonb;
+alter table public.team_squad_cache add column if not exists last_refreshed_at timestamptz;
+alter table public.team_squad_cache add column if not exists source text;
 
 create index if not exists team_squad_cache_team_id_idx on public.team_squad_cache (team_id);
 create index if not exists team_squad_cache_league_id_idx on public.team_squad_cache (league_id);

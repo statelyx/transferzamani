@@ -13,11 +13,14 @@ SOFASCORE_RATE_LIMIT_MS=350
 NEXT_PUBLIC_SUPABASE_URL=<your Supabase project URL>
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<your Supabase publishable key>
 SUPABASE_SECRET_KEY=<your Supabase secret key>
+CRON_SECRET=<optional cron bearer secret>
 ```
 
 Use the raw RapidAPI key only. Do not include quotes, `Bearer`, spaces, `https://`, or trailing slashes. If another RapidAPI integration already uses `RAPIDAPI_HOST`, keep it as-is and add `SOFASCORE_RAPIDAPI_HOST` for SofaScore.
 
 Run `supabase/schema.sql` in Supabase SQL Editor before enabling database cache writes.
+
+Team squads are saved to Supabase after the first user request. Vercel Cron refreshes saved squads every day at 03:00 Turkey time via `/api/cron/update-squads`.
 
 If the site shows `Fallback veri modu` with `429 Too many requests`, the key is being read but the RapidAPI quota/rate limit is exhausted. Wait for the quota window to reset or upgrade/change the RapidAPI app key.
 

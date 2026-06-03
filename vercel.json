@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/update-squads",
+      "schedule": "0 0 * * *"
+    }
+  ]
+}

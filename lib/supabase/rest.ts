@@ -5,6 +5,10 @@ type SupabaseCacheRecord<T> = {
   team_id?: number;
   payload: T;
   updated_at?: string;
+  player_count?: number;
+  last_change_summary?: unknown;
+  last_refreshed_at?: string;
+  source?: string;
 };
 
 const SUPABASE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
@@ -47,11 +51,14 @@ export async function writeSupabaseCache<T>(
   if (!config) return;
 
   try {
-    await fetch(`${config.url}/rest/v1/${table}`, {
+    const url = new URL(`${config.url}/rest/v1/${table}`);
+    url.searchParams.set("on_conflict", "cache_key");
+
+    await fetch(url, {
       method: "POST",
       headers: {
         ...supabaseHeaders(config.key),
-        Prefer: "resolution=merge-duplicates"
+        Prefer: "resolution=merge-duplicates,return=minimal"
       },
       body: JSON.stringify({
         ...row,
@@ -60,6 +67,28 @@ export async function writeSupabaseCache<T>(
     });
   } catch {
     // Supabase cache failure should not block live API responses.
+  }
+}
+
+export async function listSupabaseCacheRows<T>(table: string, limit = 500) {
+  const config = supabaseConfig();
+  if (!config) return [];
+
+  try {
+    const url = new URL(`${config.url}/rest/v1/${table}`);
+    url.searchParams.set("select", "cache_key,team_name,league_id,team_id,payload,updated_at");
+    url.searchParams.set("order", "updated_at.asc");
+    url.searchParams.set("limit", String(limit));
+
+    const response = await fetch(url, {
+      headers: supabaseHeaders(config.key),
+      cache: "no-store"
+    });
+
+    if (!response.ok) return [];
+    return (await response.json()) as Array<SupabaseCacheRecord<T>>;
+  } catch {
+    return [];
   }
 }
 

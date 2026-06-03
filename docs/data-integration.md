@@ -14,6 +14,7 @@ Tam takim, kadro, oyuncu fotografi, lig fiksturu ve transfer/haber akisi icin ca
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Eski anon public JWT. Geriye donuk destek icin opsiyonel.
 - `SUPABASE_SECRET_KEY`: Supabase secret key. Sadece server-side.
 - `SUPABASE_SERVICE_ROLE_KEY`: Eski service_role JWT. Sadece server-side; client'a acilmayacak.
+- `CRON_SECRET`: Vercel Cron route'unu korumak icin opsiyonel bearer secret.
 
 ## Supabase tablo omurgasi
 
@@ -39,8 +40,11 @@ Tam takim, kadro, oyuncu fotografi, lig fiksturu ve transfer/haber akisi icin ca
 - Ortak TypeScript tipleri: `lib/sofascore/types.ts`
 - Server-side proxy: `app/api/sofascore/[...endpoint]/route.ts`
 - Takim kadro API route'u: `app/api/football/team-squad/route.ts`
+- Gece kadro guncelleme cron route'u: `app/api/cron/update-squads/route.ts`
 - Supabase REST cache helper: `lib/supabase/rest.ts`
 - Supabase tablo SQL'i: `supabase/schema.sql`
+
+Vercel Cron `vercel.json` icinde `0 0 * * *` olarak tanimli. Bu Turkiye saatiyle 03:00'e denk gelir.
 
 Ornek kullanim:
 
