@@ -1167,8 +1167,8 @@ h3,
   margin: 8px 0 14px;
   overflow-wrap: anywhere;
   color: var(--primary);
-  font-size: clamp(2.6rem, 6vw, 5.2rem);
-  line-height: 0.9;
+  font-size: clamp(2rem, 4.2vw, 3.8rem);
+  line-height: 0.96;
 }
 
 .market-block {
@@ -1181,7 +1181,7 @@ h3,
 
 .market-block strong {
   color: var(--secondary);
-  font-size: 2rem;
+  font-size: 1.55rem;
 }
 
 .market-block em,
@@ -1217,7 +1217,7 @@ h3,
 
 .mini-stat strong {
   color: var(--text);
-  font-size: 1.8rem;
+  font-size: 1.35rem;
   line-height: 1;
 }
 

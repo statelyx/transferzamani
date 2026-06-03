@@ -78,6 +78,8 @@ export async function refreshTeamSquad(team: string, league = "global", previous
   await writeSupabaseCache(TEAM_SQUAD_TABLE, {
     cache_key: teamSquadCacheKey(team, league),
     team_name: resolved.name,
+    country_name: leagueCountryName(league),
+    league_name: leagueDisplayName(league),
     league_id: league,
     team_id: resolved.id,
     payload,
@@ -88,6 +90,30 @@ export async function refreshTeamSquad(team: string, league = "global", previous
   });
 
   return payload;
+}
+
+function leagueDisplayName(league: string) {
+  const labels: Record<string, string> = {
+    "premier-league": "Premier League",
+    laliga: "LaLiga",
+    "serie-a": "Serie A",
+    bundesliga: "Bundesliga",
+    "ligue-1": "Ligue 1",
+    "super-lig": "Super Lig"
+  };
+  return labels[league] || league;
+}
+
+function leagueCountryName(league: string) {
+  const labels: Record<string, string> = {
+    "premier-league": "Ingiltere",
+    laliga: "Ispanya",
+    "serie-a": "Italya",
+    bundesliga: "Almanya",
+    "ligue-1": "Fransa",
+    "super-lig": "Turkiye"
+  };
+  return labels[league] || "Global";
 }
 
 export async function resolveTeam(team: string) {

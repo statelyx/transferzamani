@@ -1,6 +1,8 @@
 type SupabaseCacheRecord<T> = {
   cache_key: string;
   team_name?: string;
+  country_name?: string;
+  league_name?: string;
   league_id?: string;
   team_id?: number;
   payload: T;

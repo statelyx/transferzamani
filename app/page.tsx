@@ -214,14 +214,20 @@ export default function Home() {
     return () => controller.abort();
   }, [hasConnectedSquad, selectedLeague.id, selectedTeam]);
 
-  // Reset selected player when the active squad changes
-  useEffect(() => {
-    if (selectedTeamSquad.length > 0) {
-      setSelectedId(selectedTeamSquad[0].id);
+  const players = useMemo(() => {
+    const map = new Map<number, PlayerProfile>();
+    for (const player of [...gsPlayers, ...remoteSquad]) {
+      map.set(player.id, player);
     }
-  }, [selectedTeamSquad]);
+    return Array.from(map.values());
+  }, [gsPlayers, remoteSquad]);
 
-  const players = selectedTeamSquad;
+  useEffect(() => {
+    if (!selectedId && players.length > 0) {
+      setSelectedId(players[0].id);
+    }
+  }, [players, selectedId]);
+
   const selectedPlayer = players.find((player) => player.id === selectedId) || players[0] || null;
   const comparePlayerA = players.find((player) => player.id === compareA) || null;
   const comparePlayerB = players.find((player) => player.id === compareB) || null;
@@ -898,6 +904,12 @@ function LineupBuilder({
       );
     })
     .sort((a, b) => {
+      if (normalizedLineupQuery) {
+        const aStarts = normalize(a.name).startsWith(normalizedLineupQuery) ? 1 : 0;
+        const bStarts = normalize(b.name).startsWith(normalizedLineupQuery) ? 1 : 0;
+        if (aStarts !== bStarts) return bStarts - aStarts;
+      }
+
       const roleScore = roleFitScore(b, selectedSlotMeta.role) - roleFitScore(a, selectedSlotMeta.role);
       if (roleScore) return roleScore;
 
