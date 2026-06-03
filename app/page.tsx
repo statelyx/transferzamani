@@ -48,17 +48,17 @@ const navItems: Array<{ key: ViewKey; label: string; icon: React.ReactNode }> = 
 ];
 
 const lineupSlots = [
-  { id: "lw", label: "LW", role: "F", row: 1, col: 1 },
-  { id: "st", label: "ST", role: "F", row: 1, col: 2 },
-  { id: "rw", label: "RW", role: "F", row: 1, col: 3 },
-  { id: "cm1", label: "MC", role: "M", row: 3, col: 1 },
-  { id: "cm2", label: "MC", role: "M", row: 3, col: 2 },
-  { id: "cm3", label: "MC", role: "M", row: 3, col: 3 },
-  { id: "lb", label: "DL", role: "D", row: 4, col: 1 },
-  { id: "cb1", label: "DC", role: "D", row: 4, col: 2 },
-  { id: "cb2", label: "DC", role: "D", row: 4, col: 3 },
-  { id: "rb", label: "DR", role: "D", row: 4, col: 4 },
-  { id: "gk", label: "GK", role: "G", row: 5, col: 2 }
+  { id: "lw", label: "LW", role: "F" },
+  { id: "st", label: "ST", role: "F" },
+  { id: "rw", label: "RW", role: "F" },
+  { id: "cm1", label: "LCM", role: "M" },
+  { id: "cm2", label: "CM", role: "M" },
+  { id: "cm3", label: "RCM", role: "M" },
+  { id: "lb", label: "LB", role: "D" },
+  { id: "cb1", label: "LCB", role: "D" },
+  { id: "cb2", label: "RCB", role: "D" },
+  { id: "rb", label: "RB", role: "D" },
+  { id: "gk", label: "GK", role: "G" }
 ] as const;
 
 export default function Home() {
@@ -651,11 +651,21 @@ function LineupBuilder({
       return next;
     });
   };
+  const clearLineup = () => {
+    setLineup(
+      lineupSlots.reduce<Record<string, number | null>>((acc, slot) => {
+        acc[slot.id] = null;
+        return acc;
+      }, {})
+    );
+  };
 
   return (
     <div className="lineup-workspace">
       <section className="pitch-board">
         <div className="pitch-lines" />
+        <div className="penalty-box top" />
+        <div className="penalty-box bottom" />
         <div className="formation-menu">
           <span>Dizilis</span>
           <select>
@@ -664,6 +674,15 @@ function LineupBuilder({
             <option>3-5-2 Fluid</option>
             <option>4-2-3-1 Deep</option>
           </select>
+        </div>
+        <div className="lineup-board-head">
+          <div>
+            <span>STAT11 BUILDER</span>
+            <strong>Hayalimdeki Ilk 11</strong>
+          </div>
+          <button type="button" onClick={clearLineup}>
+            Temizle
+          </button>
         </div>
         <div className="budget-menu">
           {[50, 100, 250, 500].map((value) => (
@@ -683,16 +702,8 @@ function LineupBuilder({
                 key={slot.id}
                 slot={slot}
                 player={player || null}
-                players={players}
                 selected={selectedSlot === slot.id}
-                usedIds={usedIds}
                 onSelectSlot={() => setSelectedSlot(slot.id)}
-                onChange={(id) =>
-                  setLineup((current) => ({
-                    ...current,
-                    [slot.id]: id
-                  }))
-                }
               />
             );
           })}
@@ -702,8 +713,8 @@ function LineupBuilder({
         <div className="lineup-search-panel glass-panel">
           <div className="panel-title">
             <div>
-              <span className="kicker">OYUNCU ARAMA</span>
-              <h2>{selectedSlotMeta.label} slotu</h2>
+              <span className="kicker">OYUNCU HAVUZU</span>
+              <h2>{selectedSlotMeta.label}</h2>
             </div>
             <Search size={20} />
           </div>
@@ -718,9 +729,13 @@ function LineupBuilder({
           </label>
           {selectedSlotPlayer ? (
             <button className="clear-slot" type="button" onClick={() => assignPlayerToSelectedSlot(null)}>
-              {selectedSlotPlayer.name} slotunu temizle
+              {selectedSlotPlayer.name} kaldir
             </button>
           ) : null}
+          <div className="lineup-scout-tabs">
+            <span className="active">Uygun</span>
+            <span>{players.length} oyuncu</span>
+          </div>
           <div className="lineup-search-results">
             {searchablePlayers.slice(0, 10).map((player) => (
               <button
@@ -734,7 +749,7 @@ function LineupBuilder({
                   <strong>{player.name}</strong>
                   <em>{player.team.name} / {player.positionLabel} / {player.country}</em>
                 </span>
-                <b>{usedIds.includes(player.id) && lineup[selectedSlot] !== player.id ? "TASINIR" : player.marketValueLabel}</b>
+                <b>{usedIds.includes(player.id) && lineup[selectedSlot] !== player.id ? "TASI" : player.marketValueLabel}</b>
               </button>
             ))}
           </div>
@@ -891,45 +906,26 @@ function ScoutCenter({
 function LineupSlot({
   slot,
   player,
-  players,
   selected,
-  usedIds,
-  onSelectSlot,
-  onChange
+  onSelectSlot
 }: {
   slot: (typeof lineupSlots)[number];
   player: PlayerProfile | null;
-  players: PlayerProfile[];
   selected: boolean;
-  usedIds: number[];
   onSelectSlot: () => void;
-  onChange: (id: number | null) => void;
 }) {
-  const options = players
-    .filter((item) => item.position === slot.role || !usedIds.includes(item.id) || item.id === player?.id)
-    .sort((a, b) => b.metrics.future - a.metrics.future);
-
   return (
-    <div className={`lineup-slot row-${slot.row} col-${slot.col} ${selected ? "selected" : ""}`}>
-      <button type="button" onClick={onSelectSlot}>
-        {player ? <PlayerAvatar player={player} size="lineup" /> : <Plus size={22} />}
+    <div className={`lineup-slot slot-${slot.id} ${selected ? "selected" : ""}`}>
+      <button type="button" onClick={onSelectSlot} aria-label={`${slot.label} slotu`}>
+        <span className="shirt-frame">
+          {player ? <PlayerAvatar player={player} size="lineup" /> : <Plus size={22} />}
+        </span>
+        <span className="slot-copy">
+          <strong>{player?.shortName || slot.label}</strong>
+          <em>{player?.marketValueLabel || "Bos slot"}</em>
+        </span>
+        <span className="slot-rating">{player?.metrics.future || slot.label}</span>
       </button>
-      <select
-        value={player?.id || ""}
-        onFocus={onSelectSlot}
-        onChange={(event) => {
-          onSelectSlot();
-          onChange(event.target.value ? Number(event.target.value) : null);
-        }}
-      >
-        <option value="">{slot.label}</option>
-        {options.map((item) => (
-          <option disabled={usedIds.includes(item.id) && item.id !== player?.id} key={item.id} value={item.id}>
-            {item.name}
-          </option>
-        ))}
-      </select>
-      <span>{player?.marketValueLabel || slot.label}</span>
     </div>
   );
 }
