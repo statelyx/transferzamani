@@ -92,7 +92,7 @@ export async function sofaScoreBinary(
 }
 
 export function buildSofaScoreUrl(endpointPath: string, params: SofaScoreParams = {}) {
-  const host = process.env.RAPIDAPI_HOST || DEFAULT_HOST;
+  const host = process.env.SOFASCORE_RAPIDAPI_HOST || process.env.RAPIDAPI_HOST || DEFAULT_HOST;
   const url = new URL(`https://${host}/${endpointPath.replace(/^\/+/, "")}`);
 
   for (const [key, value] of Object.entries(params)) {
@@ -148,7 +148,7 @@ async function fetchWithRetry(endpoint: SofaScoreEndpoint, url: string, retries:
 
 function rapidApiHeaders() {
   const key = process.env.RAPIDAPI_KEY;
-  const host = process.env.RAPIDAPI_HOST || DEFAULT_HOST;
+  const host = process.env.SOFASCORE_RAPIDAPI_HOST || process.env.RAPIDAPI_HOST || DEFAULT_HOST;
 
   if (!key) {
     throw new Error("RAPIDAPI_KEY environment variable tanimli degil.");

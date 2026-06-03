@@ -5,7 +5,9 @@ Tam takim, kadro, oyuncu fotografi, lig fiksturu ve transfer/haber akisi icin ca
 ## Gerekli Vercel environment variables
 
 - `RAPIDAPI_KEY`: RapidAPI uzerindeki futbol/SofaSport anahtari.
-- `RAPIDAPI_HOST`: Kullanilan RapidAPI host degeri. Mevcut varsayilan: `sofascore.p.rapidapi.com`.
+- `RAPIDAPI_KEY`: RapidAPI hesabindaki ortak anahtar. RapidAPI'de farkli API'ler icin genelde ayni kalir.
+- `RAPIDAPI_HOST`: Baska RapidAPI entegrasyonlari icin kullanilan eski/genel host. SofaScore icin zorunlu degil.
+- `SOFASCORE_RAPIDAPI_HOST`: SofaScore RapidAPI host degeri. Bu proje icin: `sofascore.p.rapidapi.com`.
 - `SOFASCORE_RATE_LIMIT_MS`: Server-side istekler arasindaki minimum bekleme. Varsayilan: `350`.
 - `NEXT_PUBLIC_SUPABASE_URL`: Supabase proje URL'i.
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Public anon key.

@@ -224,12 +224,12 @@ export type GalatasarayPayload = {
 const CACHE_TTL_MS = 30 * 60 * 1000;
 const STALE_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const CACHE_VERSION = 6;
-const API_BASE = `https://${process.env.RAPIDAPI_HOST || "sofascore.p.rapidapi.com"}`;
+const API_BASE = `https://${process.env.SOFASCORE_RAPIDAPI_HOST || process.env.RAPIDAPI_HOST || "sofascore.p.rapidapi.com"}`;
 let memoryCache: { payload: GalatasarayPayload; timestamp: number } | null = null;
 
 async function sofaFetch<T>(path: string): Promise<T> {
   const key = process.env.RAPIDAPI_KEY;
-  const host = process.env.RAPIDAPI_HOST || "sofasport.p.rapidapi.com";
+  const host = process.env.SOFASCORE_RAPIDAPI_HOST || process.env.RAPIDAPI_HOST || "sofascore.p.rapidapi.com";
 
   if (!key) {
     throw new Error("RAPIDAPI_KEY ortam değişkeni tanımlı değil.");
