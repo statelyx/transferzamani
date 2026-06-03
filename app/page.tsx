@@ -306,6 +306,37 @@ function TopNav({
   );
 }
 
+const countryOptions = [
+  { name: "Ingiltere", image: "/football/countries/england-1200x630.png", region: "Avrupa" },
+  { name: "Ispanya", image: "/football/countries/spain-1200x630.png", region: "Avrupa" },
+  { name: "Italya", image: "/football/countries/italy-1200x630.png", region: "Avrupa" },
+  { name: "Almanya", image: "/football/countries/germany-1200x630.png", region: "Avrupa" },
+  { name: "Fransa", image: "/football/countries/france-1200x630.png", region: "Avrupa" },
+  { name: "Turkiye", image: "/football/countries/turkey-1200x630.png", region: "Avrupa" },
+  { name: "Brezilya", image: "/football/countries/brazil-1200x630.png", region: "G. Amerika" },
+  { name: "Arjantin", image: "/football/countries/argentina-1200x630.png", region: "G. Amerika" },
+  { name: "Portekiz", image: "/football/countries/portugal-1200x630.png", region: "Avrupa" },
+  { name: "Hollanda", image: "/football/countries/netherlands-1200x630.png", region: "Avrupa" }
+];
+
+const leagueCatalog = [
+  { id: "premier-league", name: "Premier League", country: "Ingiltere", value: "EUR11.8B", folder: "premier-league" },
+  { id: "laliga", name: "LaLiga", country: "Ispanya", value: "EUR5.7B", folder: "laliga" },
+  { id: "serie-a", name: "Serie A", country: "Italya", value: "EUR5.5B", folder: "serie-a" },
+  { id: "bundesliga", name: "Bundesliga", country: "Almanya", value: "EUR4.4B", folder: "bundesliga" },
+  { id: "ligue-1", name: "Ligue 1", country: "Fransa", value: "EUR3.4B", folder: "ligue-1" },
+  { id: "super-lig", name: "Super Lig", country: "Turkiye", value: "EUR1.2B", folder: "super-lig" }
+];
+
+const leagueTeams: Record<string, string[]> = {
+  "premier-league": ["AFC Bournemouth", "Arsenal FC", "Aston Villa", "Chelsea FC", "Liverpool FC", "Manchester City", "Manchester United", "Newcastle United", "Tottenham Hotspur", "West Ham United"],
+  laliga: ["Atlético de Madrid", "FC Barcelona", "Real Madrid", "Real Sociedad", "Sevilla FC", "Villarreal CF"],
+  "serie-a": ["AC Milan", "AS Roma", "Atalanta BC", "Inter Milan", "Juventus FC", "SSC Napoli"],
+  bundesliga: ["Bayern Munich", "Borussia Dortmund", "Bayer 04 Leverkusen", "RB Leipzig", "Eintracht Frankfurt", "VfB Stuttgart"],
+  "ligue-1": ["Olympique Marseille", "Olympique Lyon", "AS Monaco", "Paris Saint-Germain", "LOSC Lille", "RC Lens"],
+  "super-lig": ["Galatasaray", "Fenerbahce", "Besiktas JK", "Trabzonspor", "Basaksehir FK", "Samsunspor", "Göztepe", "Kocaelispor", "Konyaspor", "Kasimpasa"]
+};
+
 function HomeDashboard({
   data,
   players,
@@ -326,41 +357,137 @@ function HomeDashboard({
   onSelectPlayer: (id: number) => void;
 }) {
   const topPlayers = [...players].sort((a, b) => b.metrics.future - a.metrics.future).slice(0, 4);
+  const [countriesOpen, setCountriesOpen] = useState(false);
+  const [selectedLeague, setSelectedLeague] = useState(leagueCatalog[5]);
+  const [selectedTeam, setSelectedTeam] = useState("Galatasaray");
+  const selectedTeams = leagueTeams[selectedLeague.id] || [];
+  const selectedTeamSquad = selectedTeam === "Galatasaray" || selectedTeam === data?.team.name ? players.slice(0, 12) : topPlayers;
+  const portalPills = [
+    { label: "Canli veri", value: liveStatusText(data), tone: data ? "green" : "amber" },
+    { label: "Transfer duyumu", value: rumors[0]?.headline || "Yeni sinyal bekleniyor", tone: "green" },
+    {
+      label: "Haber",
+      value: data?.events.previous
+        ? `${data.events.previous.homeTeam} ${data.events.previous.score} ${data.events.previous.awayTeam}`
+        : "Mac baglami hazir",
+      tone: "neutral"
+    },
+    { label: "Kadro havuzu", value: `${players.length || filteredPlayers.length} profil`, tone: "neutral" }
+  ];
 
   return (
-    <div className="page-flow">
-      <section className="hero-grid">
-        <div className="hero-panel pitch-card">
-          <div className="hero-copy">
-            <span className="kicker">DIGITAL PITCH</span>
-            <h1>STAT11</h1>
-            <p>
-              Galatasaray kadrosu, oyuncu profilleri, transfer sinyalleri ve taktiksel ilk 11
-              tek koyu analitik arayuzde.
-            </p>
-            <div className="hero-actions">
-              <button type="button" onClick={() => setView("scout")}>
-                <Target size={18} />
-                Scout Merkezi
-              </button>
-              <button type="button" onClick={() => setView("lineup")}>
-                <Plus size={18} />
-                Ilk 11 Kur
-              </button>
+    <div className="page-flow portal-flow">
+      <section className="pulse-board pitch-card">
+        <div className="pulse-head">
+          <div>
+            <span className="kicker">STAT11 AKIS</span>
+            <h1>Haberler, duyumlar ve lig kapisi</h1>
+          </div>
+          <div className="pulse-actions">
+            <button type="button" onClick={() => setView("scout")}>
+              <Target size={17} />
+              Scout
+            </button>
+            <button type="button" onClick={() => setView("lineup")}>
+              <Plus size={17} />
+              Ilk 11
+            </button>
+          </div>
+        </div>
+        <div className="pulse-strip">
+          {portalPills.map((pill) => (
+            <span className={`pulse-pill ${pill.tone}`} key={pill.label}>
+              <b>{pill.label}</b>
+              <em>{pill.value}</em>
+            </span>
+          ))}
+        </div>
+      </section>
+
+      <section className="portal-nav-row">
+        <div className="country-picker">
+          <button type="button" onClick={() => setCountriesOpen((open) => !open)}>
+            Ulkeler
+            <ChevronRight size={16} />
+          </button>
+          {countriesOpen ? (
+            <div className="country-menu pitch-card">
+              {countryOptions.map((country) => (
+                <button type="button" key={country.name}>
+                  <img src={country.image} alt="" />
+                  <span>{country.name}</span>
+                  <em>{country.region}</em>
+                </button>
+              ))}
             </div>
+          ) : null}
+        </div>
+        <button className="world-cup-chip" type="button">
+          <Trophy size={17} />
+          Dunya Kupasi Ozel
+        </button>
+        <div className="league-rail" aria-label="Avrupanin en degerli ligleri">
+          {leagueCatalog.map((league) => (
+            <button
+              className={selectedLeague.id === league.id ? "league-card active" : "league-card"}
+              type="button"
+              key={league.id}
+              onClick={() => {
+                setSelectedLeague(league);
+                setSelectedTeam(leagueTeams[league.id]?.[0] || "");
+              }}
+            >
+              <span>{league.name}</span>
+              <em>{league.country}</em>
+              <b>{league.value}</b>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="league-browser">
+        <div className="teams-panel pitch-card">
+          <div className="section-head compact">
+            <div>
+              <span className="kicker">{selectedLeague.country}</span>
+              <h2>{selectedLeague.name} takimlari</h2>
+            </div>
+            <span className="muted-count">{selectedTeams.length} takim</span>
           </div>
-          <div className="hero-metrics">
-            <MetricTile icon={<Users size={18} />} label="Kadro" value={loading ? "-" : String(data?.team.playerCount || 0)} />
-            <MetricTile icon={<Shield size={18} />} label="Takim" value={data?.team.name || "Galatasaray"} />
-            <MetricTile icon={<Trophy size={18} />} label="Turnuva" value={data?.team.tournament || "Super Lig"} />
-            <MetricTile icon={<CalendarDays size={18} />} label="Guncelleme" value={data ? formatDateTime(data.generatedAt) : "-"} />
+          <div className="team-grid">
+            {selectedTeams.map((team) => (
+              <button className={selectedTeam === team ? "team-card active" : "team-card"} type="button" key={team} onClick={() => setSelectedTeam(team)}>
+                <TeamLogo folder={selectedLeague.folder} team={team} />
+                <strong>{team}</strong>
+                <em>Kadroya gir</em>
+              </button>
+            ))}
           </div>
         </div>
-        <div className="ticker-panel pitch-card">
-          <h2>Mac Baglami</h2>
-          <EventStrip title="Son mac" event={data?.events.previous || null} />
-          <EventStrip title="Siradaki mac" event={data?.events.next || null} />
-        </div>
+        <aside className="squad-panel pitch-card">
+          <div className="panel-title">
+            <div>
+              <span className="kicker">KADRO</span>
+              <h2>{selectedTeam}</h2>
+            </div>
+            <Shield size={18} />
+          </div>
+          <div className="squad-list">
+            {selectedTeamSquad.slice(0, 8).map((player) => (
+              <button type="button" key={player.id} onClick={() => onSelectPlayer(player.id)}>
+                <PlayerAvatar player={player} size="sm" />
+                <span>
+                  <strong>{player.shortName}</strong>
+                  <em>{player.positionLabel} / {player.marketValueLabel}</em>
+                </span>
+                <b>{player.metrics.future}</b>
+              </button>
+            ))}
+          </div>
+          <button className="squad-open" type="button" onClick={() => setView("profile")}>
+            Tam kadro ve analiz <ArrowRight size={16} />
+          </button>
+        </aside>
       </section>
 
       <section className="section-head">
@@ -372,7 +499,7 @@ function HomeDashboard({
           Tumunu gor <ChevronRight size={16} />
         </button>
       </section>
-      <div className="transfer-grid">
+      <div className="transfer-grid compact-transfer-grid">
         {(rumors.length ? rumors : []).slice(0, 4).map((rumor) => (
           <RumorFeatureCard key={rumor.id} rumor={rumor} players={players} />
         ))}
@@ -408,6 +535,21 @@ function HomeDashboard({
       ) : null}
     </div>
   );
+}
+
+function TeamLogo({ folder, team }: { folder: string; team: string }) {
+  return (
+    <span className="team-logo">
+      <img src={`/football/leagues/${folder}/${encodeURIComponent(team)}.png`} alt="" />
+    </span>
+  );
+}
+
+function liveStatusText(data: GalatasarayPayload | null) {
+  if (!data) return "Baglanti bekleniyor";
+  if (data.status.mode === "live") return "Canli API aktif";
+  if (data.status.mode === "stale") return "Cache verisi";
+  return "Fallback mod";
 }
 
 function ProfileWorkspace({
