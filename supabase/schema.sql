@@ -35,3 +35,26 @@ for all
 to service_role
 using (true)
 with check (true);
+
+create table if not exists public.transfers_cache (
+  cache_key text primary key,
+  payload jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.transfers_cache enable row level security;
+
+drop policy if exists "Public read transfers cache" on public.transfers_cache;
+create policy "Public read transfers cache"
+on public.transfers_cache
+for select
+to anon, authenticated
+using (true);
+
+drop policy if exists "Service role writes transfers cache" on public.transfers_cache;
+create policy "Service role writes transfers cache"
+on public.transfers_cache
+for all
+to service_role
+using (true)
+with check (true);

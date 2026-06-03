@@ -61,6 +61,74 @@ const lineupSlots = [
   { id: "gk", label: "GK", role: "G" }
 ] as const;
 
+const countryOptions = [
+  { name: "Ingiltere", image: "/football/countries/england-1200x630.png", region: "Avrupa" },
+  { name: "Ispanya", image: "/football/countries/spain-1200x630.png", region: "Avrupa" },
+  { name: "Italya", image: "/football/countries/italy-1200x630.png", region: "Avrupa" },
+  { name: "Almanya", image: "/football/countries/germany-1200x630.png", region: "Avrupa" },
+  { name: "Fransa", image: "/football/countries/france-1200x630.png", region: "Avrupa" },
+  { name: "Turkiye", image: "/football/countries/turkey-1200x630.png", region: "Avrupa" },
+  { name: "Brezilya", image: "/football/countries/brazil-1200x630.png", region: "G. Amerika" },
+  { name: "Arjantin", image: "/football/countries/argentina-1200x630.png", region: "G. Amerika" },
+  { name: "Portekiz", image: "/football/countries/portugal-1200x630.png", region: "Avrupa" },
+  { name: "Hollanda", image: "/football/countries/netherlands-1200x630.png", region: "Avrupa" }
+];
+
+const leagueCatalog = [
+  { id: "premier-league", name: "Premier League", country: "Ingiltere", value: "EUR11.8B", folder: "premier-league" },
+  { id: "laliga", name: "LaLiga", country: "Ispanya", value: "EUR5.7B", folder: "laliga" },
+  { id: "serie-a", name: "Serie A", country: "Italya", value: "EUR5.5B", folder: "serie-a" },
+  { id: "bundesliga", name: "Bundesliga", country: "Almanya", value: "EUR4.4B", folder: "bundesliga" },
+  { id: "ligue-1", name: "Ligue 1", country: "Fransa", value: "EUR3.4B", folder: "ligue-1" },
+  { id: "super-lig", name: "Super Lig", country: "Turkiye", value: "EUR1.2B", folder: "super-lig" }
+];
+
+const leagueTeams: Record<string, string[]> = {
+  "premier-league": ["AFC Bournemouth", "Arsenal FC", "Aston Villa", "Chelsea FC", "Liverpool FC", "Manchester City", "Manchester United", "Newcastle United", "Tottenham Hotspur", "West Ham United"],
+  laliga: ["Atlético de Madrid", "FC Barcelona", "Real Madrid", "Real Sociedad", "Sevilla FC", "Villarreal CF"],
+  "serie-a": ["AC Milan", "AS Roma", "Atalanta BC", "Inter Milan", "Juventus FC", "SSC Napoli"],
+  bundesliga: ["Bayern Munich", "Borussia Dortmund", "Bayer 04 Leverkusen", "RB Leipzig", "Eintracht Frankfurt", "VfB Stuttgart"],
+  "ligue-1": ["Olympique Marseille", "Olympique Lyon", "AS Monaco", "Paris Saint-Germain", "LOSC Lille", "RC Lens"],
+  "super-lig": ["Galatasaray", "Fenerbahce", "Besiktas JK", "Trabzonspor", "Basaksehir FK", "Samsunspor", "Göztepe", "Kocaelispor", "Konyaspor", "Kasimpasa"]
+};
+
+const fullLeagueTeams: Record<string, string[]> = {
+  "premier-league": [
+    "AFC Bournemouth", "Arsenal FC", "Aston Villa", "Brentford FC", "Brighton & Hove Albion",
+    "Burnley FC", "Chelsea FC", "Crystal Palace", "Everton FC", "Fulham FC", "Leeds United",
+    "Liverpool FC", "Manchester City", "Manchester United", "Newcastle United", "Nottingham Forest",
+    "Sunderland AFC", "Tottenham Hotspur", "West Ham United", "Wolverhampton Wanderers"
+  ],
+  laliga: [
+    "Athletic Bilbao", "Atlético de Madrid", "CA Osasuna", "Celta de Vigo", "Deportivo Alavés",
+    "Elche CF", "FC Barcelona", "Getafe CF", "Girona FC", "Levante UD", "Rayo Vallecano",
+    "RCD Espanyol Barcelona", "RCD Mallorca", "Real Betis Balompié", "Real Madrid", "Real Oviedo",
+    "Real Sociedad", "Sevilla FC", "Valencia CF", "Villarreal CF"
+  ],
+  "serie-a": [
+    "AC Milan", "ACF Fiorentina", "AS Roma", "Atalanta BC", "Bologna FC 1909", "Cagliari Calcio",
+    "Como 1907", "Genoa CFC", "Hellas Verona", "Inter Milan", "Juventus FC", "Parma Calcio 1913",
+    "Pisa Sporting Club", "SS Lazio", "SSC Napoli", "Torino FC", "Udinese Calcio", "US Cremonese",
+    "US Lecce", "US Sassuolo"
+  ],
+  bundesliga: [
+    "1.FC Heidenheim 1846", "1.FC Köln", "1.FC Union Berlin", "1.FSV Mainz 05", "Bayer 04 Leverkusen",
+    "Bayern Munich", "Borussia Dortmund", "Borussia Mönchengladbach", "Eintracht Frankfurt", "FC Augsburg",
+    "FC St. Pauli", "Hamburger SV", "RB Leipzig", "SC Freiburg", "SV Werder Bremen", "TSG 1899 Hoffenheim",
+    "VfB Stuttgart", "VfL Wolfsburg"
+  ],
+  "ligue-1": [
+    "AJ Auxerre", "Angers SCO", "AS Monaco", "FC Lorient", "FC Metz", "FC Nantes", "FC Toulouse",
+    "Le Havre AC", "LOSC Lille", "OGC Nice", "Olympique Lyon", "Olympique Marseille", "Paris FC",
+    "Paris Saint-Germain", "RC Lens", "RC Strasbourg Alsace", "Stade Brestois 29", "Stade Rennais FC"
+  ],
+  "super-lig": [
+    "Alanyaspor", "Antalyaspor", "Basaksehir FK", "Besiktas JK", "Caykur Rizespor", "Eyüpspor",
+    "Fatih Karagümrük", "Fenerbahce", "Galatasaray", "Gaziantep FK", "Genclerbirligi Ankara",
+    "Göztepe", "Kasimpasa", "Kayserispor", "Kocaelispor", "Konyaspor", "Samsunspor", "Trabzonspor"
+  ]
+};
+
 export default function Home() {
   const [data, setData] = useState<GalatasarayPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -73,6 +141,13 @@ export default function Home() {
   const [compareB, setCompareB] = useState<number | null>(null);
   const [budget, setBudget] = useState(250_000_000);
   const [lineup, setLineup] = useState<Record<string, number | null>>({});
+
+  // Lifted team squad states
+  const [selectedLeague, setSelectedLeague] = useState(leagueCatalog[5]);
+  const [selectedTeam, setSelectedTeam] = useState("Galatasaray");
+  const [remoteSquad, setRemoteSquad] = useState<PlayerProfile[]>([]);
+  const [squadLoading, setSquadLoading] = useState(false);
+  const [squadError, setSquadError] = useState<string | null>(null);
 
   async function loadData() {
     setLoading(true);
@@ -100,7 +175,53 @@ export default function Home() {
     loadData();
   }, []);
 
-  const players = data?.players || [];
+  const gsPlayers = data?.players || [];
+  const hasConnectedSquad = selectedTeam === "Galatasaray" || (data?.team?.name && selectedTeam === data.team.name);
+  const selectedTeamSquad = hasConnectedSquad ? gsPlayers : remoteSquad;
+
+  useEffect(() => {
+    if (hasConnectedSquad || !selectedTeam) {
+      setRemoteSquad([]);
+      setSquadError(null);
+      setSquadLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    setSquadLoading(true);
+    setSquadError(null);
+
+    fetch(`/api/football/team-squad?team=${encodeURIComponent(selectedTeam)}&league=${encodeURIComponent(selectedLeague.id)}`, {
+      signal: controller.signal
+    })
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || "Kadro alinamadi.");
+        return body as { players: PlayerProfile[] };
+      })
+      .then((payload) => {
+        setRemoteSquad(payload.players || []);
+      })
+      .catch((error) => {
+        if (error.name === "AbortError") return;
+        setRemoteSquad([]);
+        setSquadError(error instanceof Error ? error.message : "Kadro alinamadi.");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setSquadLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [hasConnectedSquad, selectedLeague.id, selectedTeam]);
+
+  // Reset selected player when the active squad changes
+  useEffect(() => {
+    if (selectedTeamSquad.length > 0) {
+      setSelectedId(selectedTeamSquad[0].id);
+    }
+  }, [selectedTeamSquad]);
+
+  const players = selectedTeamSquad;
   const selectedPlayer = players.find((player) => player.id === selectedId) || players[0] || null;
   const comparePlayerA = players.find((player) => player.id === compareA) || null;
   const comparePlayerB = players.find((player) => player.id === compareB) || null;
@@ -168,6 +289,14 @@ export default function Home() {
               setSelectedId(id);
               setView("profile");
             }}
+            selectedLeague={selectedLeague}
+            setSelectedLeague={setSelectedLeague}
+            selectedTeam={selectedTeam}
+            setSelectedTeam={setSelectedTeam}
+            remoteSquad={remoteSquad}
+            squadLoading={squadLoading}
+            squadError={squadError}
+            selectedTeamSquad={selectedTeamSquad}
           />
         ) : null}
 
@@ -306,73 +435,7 @@ function TopNav({
   );
 }
 
-const countryOptions = [
-  { name: "Ingiltere", image: "/football/countries/england-1200x630.png", region: "Avrupa" },
-  { name: "Ispanya", image: "/football/countries/spain-1200x630.png", region: "Avrupa" },
-  { name: "Italya", image: "/football/countries/italy-1200x630.png", region: "Avrupa" },
-  { name: "Almanya", image: "/football/countries/germany-1200x630.png", region: "Avrupa" },
-  { name: "Fransa", image: "/football/countries/france-1200x630.png", region: "Avrupa" },
-  { name: "Turkiye", image: "/football/countries/turkey-1200x630.png", region: "Avrupa" },
-  { name: "Brezilya", image: "/football/countries/brazil-1200x630.png", region: "G. Amerika" },
-  { name: "Arjantin", image: "/football/countries/argentina-1200x630.png", region: "G. Amerika" },
-  { name: "Portekiz", image: "/football/countries/portugal-1200x630.png", region: "Avrupa" },
-  { name: "Hollanda", image: "/football/countries/netherlands-1200x630.png", region: "Avrupa" }
-];
-
-const leagueCatalog = [
-  { id: "premier-league", name: "Premier League", country: "Ingiltere", value: "EUR11.8B", folder: "premier-league" },
-  { id: "laliga", name: "LaLiga", country: "Ispanya", value: "EUR5.7B", folder: "laliga" },
-  { id: "serie-a", name: "Serie A", country: "Italya", value: "EUR5.5B", folder: "serie-a" },
-  { id: "bundesliga", name: "Bundesliga", country: "Almanya", value: "EUR4.4B", folder: "bundesliga" },
-  { id: "ligue-1", name: "Ligue 1", country: "Fransa", value: "EUR3.4B", folder: "ligue-1" },
-  { id: "super-lig", name: "Super Lig", country: "Turkiye", value: "EUR1.2B", folder: "super-lig" }
-];
-
-const leagueTeams: Record<string, string[]> = {
-  "premier-league": ["AFC Bournemouth", "Arsenal FC", "Aston Villa", "Chelsea FC", "Liverpool FC", "Manchester City", "Manchester United", "Newcastle United", "Tottenham Hotspur", "West Ham United"],
-  laliga: ["Atlético de Madrid", "FC Barcelona", "Real Madrid", "Real Sociedad", "Sevilla FC", "Villarreal CF"],
-  "serie-a": ["AC Milan", "AS Roma", "Atalanta BC", "Inter Milan", "Juventus FC", "SSC Napoli"],
-  bundesliga: ["Bayern Munich", "Borussia Dortmund", "Bayer 04 Leverkusen", "RB Leipzig", "Eintracht Frankfurt", "VfB Stuttgart"],
-  "ligue-1": ["Olympique Marseille", "Olympique Lyon", "AS Monaco", "Paris Saint-Germain", "LOSC Lille", "RC Lens"],
-  "super-lig": ["Galatasaray", "Fenerbahce", "Besiktas JK", "Trabzonspor", "Basaksehir FK", "Samsunspor", "Göztepe", "Kocaelispor", "Konyaspor", "Kasimpasa"]
-};
-
-const fullLeagueTeams: Record<string, string[]> = {
-  "premier-league": [
-    "AFC Bournemouth", "Arsenal FC", "Aston Villa", "Brentford FC", "Brighton & Hove Albion",
-    "Burnley FC", "Chelsea FC", "Crystal Palace", "Everton FC", "Fulham FC", "Leeds United",
-    "Liverpool FC", "Manchester City", "Manchester United", "Newcastle United", "Nottingham Forest",
-    "Sunderland AFC", "Tottenham Hotspur", "West Ham United", "Wolverhampton Wanderers"
-  ],
-  laliga: [
-    "Athletic Bilbao", "Atlético de Madrid", "CA Osasuna", "Celta de Vigo", "Deportivo Alavés",
-    "Elche CF", "FC Barcelona", "Getafe CF", "Girona FC", "Levante UD", "Rayo Vallecano",
-    "RCD Espanyol Barcelona", "RCD Mallorca", "Real Betis Balompié", "Real Madrid", "Real Oviedo",
-    "Real Sociedad", "Sevilla FC", "Valencia CF", "Villarreal CF"
-  ],
-  "serie-a": [
-    "AC Milan", "ACF Fiorentina", "AS Roma", "Atalanta BC", "Bologna FC 1909", "Cagliari Calcio",
-    "Como 1907", "Genoa CFC", "Hellas Verona", "Inter Milan", "Juventus FC", "Parma Calcio 1913",
-    "Pisa Sporting Club", "SS Lazio", "SSC Napoli", "Torino FC", "Udinese Calcio", "US Cremonese",
-    "US Lecce", "US Sassuolo"
-  ],
-  bundesliga: [
-    "1.FC Heidenheim 1846", "1.FC Köln", "1.FC Union Berlin", "1.FSV Mainz 05", "Bayer 04 Leverkusen",
-    "Bayern Munich", "Borussia Dortmund", "Borussia Mönchengladbach", "Eintracht Frankfurt", "FC Augsburg",
-    "FC St. Pauli", "Hamburger SV", "RB Leipzig", "SC Freiburg", "SV Werder Bremen", "TSG 1899 Hoffenheim",
-    "VfB Stuttgart", "VfL Wolfsburg"
-  ],
-  "ligue-1": [
-    "AJ Auxerre", "Angers SCO", "AS Monaco", "FC Lorient", "FC Metz", "FC Nantes", "FC Toulouse",
-    "Le Havre AC", "LOSC Lille", "OGC Nice", "Olympique Lyon", "Olympique Marseille", "Paris FC",
-    "Paris Saint-Germain", "RC Lens", "RC Strasbourg Alsace", "Stade Brestois 29", "Stade Rennais FC"
-  ],
-  "super-lig": [
-    "Alanyaspor", "Antalyaspor", "Basaksehir FK", "Besiktas JK", "Caykur Rizespor", "Eyüpspor",
-    "Fatih Karagümrük", "Fenerbahce", "Galatasaray", "Gaziantep FK", "Genclerbirligi Ankara",
-    "Göztepe", "Kasimpasa", "Kayserispor", "Kocaelispor", "Konyaspor", "Samsunspor", "Trabzonspor"
-  ]
-};
+// Static variables moved to the top of the file to prevent temporal dead zone issues.
 
 function HomeDashboard({
   data,
@@ -382,7 +445,15 @@ function HomeDashboard({
   selectedPlayer,
   rumors,
   setView,
-  onSelectPlayer
+  onSelectPlayer,
+  selectedLeague,
+  setSelectedLeague,
+  selectedTeam,
+  setSelectedTeam,
+  remoteSquad,
+  squadLoading,
+  squadError,
+  selectedTeamSquad
 }: {
   data: GalatasarayPayload | null;
   players: PlayerProfile[];
@@ -392,17 +463,18 @@ function HomeDashboard({
   rumors: Rumor[];
   setView: (view: ViewKey) => void;
   onSelectPlayer: (id: number) => void;
+  selectedLeague: typeof leagueCatalog[number];
+  setSelectedLeague: (league: typeof leagueCatalog[number]) => void;
+  selectedTeam: string;
+  setSelectedTeam: (team: string) => void;
+  remoteSquad: PlayerProfile[];
+  squadLoading: boolean;
+  squadError: string | null;
+  selectedTeamSquad: PlayerProfile[];
 }) {
   const topPlayers = [...players].sort((a, b) => b.metrics.future - a.metrics.future).slice(0, 4);
   const [countriesOpen, setCountriesOpen] = useState(false);
-  const [selectedLeague, setSelectedLeague] = useState(leagueCatalog[5]);
-  const [selectedTeam, setSelectedTeam] = useState("Galatasaray");
-  const [remoteSquad, setRemoteSquad] = useState<PlayerProfile[]>([]);
-  const [squadLoading, setSquadLoading] = useState(false);
-  const [squadError, setSquadError] = useState<string | null>(null);
   const selectedTeams = fullLeagueTeams[selectedLeague.id] || leagueTeams[selectedLeague.id] || [];
-  const hasConnectedSquad = selectedTeam === "Galatasaray" || selectedTeam === data?.team.name;
-  const selectedTeamSquad = hasConnectedSquad ? players : remoteSquad;
   const portalPills = [
     { label: "Canli veri", value: liveStatusText(data), tone: data ? "green" : "amber" },
     { label: "Transfer duyumu", value: rumors[0]?.headline || "Yeni sinyal bekleniyor", tone: "green" },
@@ -415,41 +487,6 @@ function HomeDashboard({
     },
     { label: "Kadro havuzu", value: `${players.length || filteredPlayers.length} profil`, tone: "neutral" }
   ];
-
-  useEffect(() => {
-    if (hasConnectedSquad || !selectedTeam) {
-      setRemoteSquad([]);
-      setSquadError(null);
-      setSquadLoading(false);
-      return;
-    }
-
-    const controller = new AbortController();
-    setSquadLoading(true);
-    setSquadError(null);
-
-    fetch(`/api/football/team-squad?team=${encodeURIComponent(selectedTeam)}&league=${encodeURIComponent(selectedLeague.id)}`, {
-      signal: controller.signal
-    })
-      .then(async (response) => {
-        const body = await response.json();
-        if (!response.ok) throw new Error(body.error || "Kadro alinamadi.");
-        return body as { players: PlayerProfile[] };
-      })
-      .then((payload) => {
-        setRemoteSquad(payload.players || []);
-      })
-      .catch((error) => {
-        if (error.name === "AbortError") return;
-        setRemoteSquad([]);
-        setSquadError(error instanceof Error ? error.message : "Kadro alinamadi.");
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setSquadLoading(false);
-      });
-
-    return () => controller.abort();
-  }, [hasConnectedSquad, selectedLeague.id, selectedTeam]);
 
   return (
     <div className="page-flow portal-flow">
@@ -557,11 +594,11 @@ function HomeDashboard({
                 <p>{squadError}</p>
               </div>
             ) : selectedTeamSquad.length ? (
-              selectedTeamSquad.slice(0, 8).map((player) => (
+              selectedTeamSquad.map((player) => (
                 <button type="button" key={player.id} onClick={() => onSelectPlayer(player.id)}>
                   <PlayerAvatar player={player} size="sm" />
                   <span>
-                    <strong>{player.shortName}</strong>
+                    <strong>#{player.jerseyNumber} {player.shortName}</strong>
                     <em>{player.positionLabel} / {player.marketValueLabel}</em>
                   </span>
                   <b>{player.metrics.future}</b>
@@ -590,7 +627,7 @@ function HomeDashboard({
         </button>
       </section>
       <div className="transfer-grid compact-transfer-grid">
-        {(rumors.length ? rumors : []).slice(0, 4).map((rumor) => (
+        {(rumors.length ? rumors : []).slice(0, 10).map((rumor) => (
           <RumorFeatureCard key={rumor.id} rumor={rumor} players={players} />
         ))}
       </div>
@@ -1508,11 +1545,11 @@ function roleFitScore(player: PlayerProfile, role: string) {
 }
 
 function sortRosterPlayers(a: PlayerProfile, b: PlayerProfile) {
-  const roleOrder = (a.squadRole === "starter" ? 0 : 1) - (b.squadRole === "starter" ? 0 : 1);
-  if (roleOrder) return roleOrder;
-
   const positionOrder = positionWeight(a.position) - positionWeight(b.position);
   if (positionOrder) return positionOrder;
+
+  const roleOrder = (a.squadRole === "starter" ? 0 : 1) - (b.squadRole === "starter" ? 0 : 1);
+  if (roleOrder) return roleOrder;
 
   return Number(a.jerseyNumber || 999) - Number(b.jerseyNumber || 999);
 }

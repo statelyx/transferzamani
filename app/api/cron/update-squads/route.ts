@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { refreshTeamSquad, type TeamSquadPayload } from "@/lib/football/team-squad";
 import { listSupabaseCacheRows } from "@/lib/supabase/rest";
+import { refreshLiveTransferRumors } from "@/lib/football/transfers";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -60,11 +61,24 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  let newsUpdated = false;
+  let newsError: string | null = null;
+  try {
+    await refreshLiveTransferRumors();
+    newsUpdated = true;
+  } catch (error) {
+    newsError = error instanceof Error ? error.message : "Bilinmeyen haber yenileme hatası.";
+  }
+
   return NextResponse.json({
     ranAt: new Date().toISOString(),
     scanned: rows.length,
     updated: results.filter((item) => item.status === "updated").length,
     failed: results.filter((item) => item.status === "failed").length,
+    newsCache: {
+      status: newsUpdated ? "updated" : "failed",
+      error: newsError
+    },
     results
   });
 }

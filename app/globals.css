@@ -618,6 +618,24 @@ h3,
 .squad-list {
   display: grid;
   gap: 8px;
+  max-height: 550px;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(84, 233, 138, 0.4) transparent;
+}
+
+.squad-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.squad-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.squad-list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(84, 233, 138, 0.4);
 }
 
 .squad-list button {

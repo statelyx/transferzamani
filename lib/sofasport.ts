@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { sofaScoreGet } from "@/lib/sofascore/client";
+import { getLiveTransferRumors } from "@/lib/football/transfers";
 
 export const GALATASARAY_TEAM_ID = 3061;
 
@@ -186,7 +187,7 @@ export type Rumor = {
   detailLevel: number;
   timeline: string;
   reasons: string[];
-  label: "Demo kayıt";
+  label: "Demo kayıt" | "Live API";
 };
 
 export type GalatasarayPayload = {
@@ -359,6 +360,20 @@ async function loadLiveGalatasarayPayload(): Promise<GalatasarayPayload> {
 
   const teamFromPlayer = squadPlayers[0]?.player.team;
 
+  let rumors: Rumor[] = [];
+  try {
+    const newsData = await getLiveTransferRumors();
+    const newsRumors = newsData?.news ? mapFotMobNewsToRumors(newsData.news, players) : [];
+    const transferRumors = newsData?.transfers ? newsData.transfers.map((t, idx) => mapFotMobTransferToRumor(t, idx, players)) : [];
+    rumors = [...newsRumors, ...transferRumors];
+  } catch (err) {
+    console.warn("FotMob haber akışı alınamadı, demo verilere dönülüyor:", err);
+  }
+
+  if (rumors.length === 0) {
+    rumors = buildDemoRumors(players);
+  }
+
   return {
     generatedAt: new Date().toISOString(),
     status: {
@@ -391,7 +406,7 @@ async function loadLiveGalatasarayPayload(): Promise<GalatasarayPayload> {
       previous: normalizeEvent(previousEvent),
       next: normalizeEvent(nearEventsResponse.nextEvent || null)
     },
-    rumors: buildDemoRumors(players),
+    rumors,
     endpoints: {
       players: `teams/get-squad?teamId=${GALATASARAY_TEAM_ID}`,
       nearEvents: `teams/get-near-events?teamId=${GALATASARAY_TEAM_ID}`
@@ -649,6 +664,124 @@ function buildDemoRumors(players: PlayerProfile[]): Rumor[] {
     }));
 }
 
+function mapFotMobNewsToRumors(items: any[], players: PlayerProfile[]): Rumor[] {
+  return items.map((item, index) => {
+    // Haber başlığında kadromuzdan bir oyuncunun adı geçiyor mu diye kontrol edelim
+    const matchedPlayer = players.find(
+      (p) =>
+        item.title.toLowerCase().includes(p.name.toLowerCase()) ||
+        item.title.toLowerCase().includes(p.shortName.toLowerCase()) ||
+        (p.name.split(" ").length > 1 &&
+          p.name
+            .split(" ")
+            .some(
+              (part) =>
+                part.length > 3 && item.title.toLowerCase().includes(part.toLowerCase())
+            ))
+    );
+
+    const playerId = matchedPlayer ? matchedPlayer.id : (players[0]?.id || 0);
+    const playerName = matchedPlayer ? matchedPlayer.name : "Galatasaray / Genel";
+
+    // Başlığa göre muhtemel kulüp çıkarımı yapalım
+    let linkedClub = "Avrupa Kulüpleri";
+    const clubs = ["Real Madrid", "Barcelona", "Liverpool", "Manchester City", "Arsenal", "Chelsea", "Napoli", "Juventus", "Bayern", "PSG", "Fenerbahçe", "Beşiktaş"];
+    for (const club of clubs) {
+      if (item.title.toLowerCase().includes(club.toLowerCase())) {
+        linkedClub = club;
+        break;
+      }
+    }
+
+    // Haber içeriğine göre duyum tipi belirleyelim
+    let type: Rumor["type"] = "İlgi";
+    const titleLower = item.title.toLowerCase();
+    if (titleLower.includes("sign") || titleLower.includes("transfer") || titleLower.includes("join") || titleLower.includes("agree")) {
+      type = "Kontrat";
+    } else if (titleLower.includes("talk") || titleLower.includes("negotiat") || titleLower.includes("discuss")) {
+      type = "Görüşme";
+    } else if (titleLower.includes("bid") || titleLower.includes("offer")) {
+      type = "Teklif";
+    } else if (titleLower.includes("deny") || titleLower.includes("reject") || titleLower.includes("dismiss")) {
+      type = "Yalanlandı";
+    }
+
+    // Haber tarihi formatı
+    let timeline = "Bugün";
+    if (item.gmtTime) {
+      try {
+        const diffMs = Date.now() - new Date(item.gmtTime).getTime();
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        if (diffHours < 1) {
+          timeline = "Son 1 saat";
+        } else if (diffHours < 24) {
+          timeline = `${diffHours} saat önce`;
+        } else {
+          const diffDays = Math.floor(diffHours / 24);
+          timeline = `${diffDays} gün önce`;
+        }
+      } catch {
+        timeline = "Yakın zamanda";
+      }
+    }
+
+    return {
+      id: item.id || `news-${index}`,
+      playerId,
+      playerName,
+      headline: item.title,
+      linkedClub,
+      type,
+      confidence: matchedPlayer ? 85 : 65,
+      sourceCount: 2,
+      sourceQuality: 88,
+      detailLevel: 75,
+      timeline,
+      reasons: [
+        "FotMob API üzerinden canlı futbol haberi çekildi.",
+        `Kaynak: ${item.sourceStr || "FotMob"}`
+      ],
+      label: "Live API" as const
+    };
+  });
+}
+
+function mapFotMobTransferToRumor(transfer: any, index: number, players: PlayerProfile[]): Rumor {
+  const matchedPlayer = players.find(
+    (p) =>
+      transfer.name.toLowerCase().includes(p.name.toLowerCase()) ||
+      transfer.name.toLowerCase().includes(p.shortName.toLowerCase())
+  );
+
+  const playerId = matchedPlayer ? matchedPlayer.id : (players[0]?.id || 0);
+  const playerName = matchedPlayer ? matchedPlayer.name : transfer.name;
+
+  const feeText = transfer.fee?.feeText || "Bedelsiz";
+  const marketValStr = transfer.marketValue 
+    ? `€${(transfer.marketValue / 1_000_000).toFixed(1)}M`
+    : "Belirtilmedi";
+
+  return {
+    id: `tr-${transfer.playerId || index}-${index}`,
+    playerId,
+    playerName,
+    headline: `${transfer.name}, ${transfer.fromClub} kulübünden ${transfer.toClub} kulübüne transfer oldu.`,
+    linkedClub: transfer.toClub,
+    type: "Kontrat",
+    confidence: 100,
+    sourceCount: 3,
+    sourceQuality: 98,
+    detailLevel: 90,
+    timeline: "Resmi",
+    reasons: [
+      "Resmi transfer gerçekleşti.",
+      `Ücret: ${feeText}`,
+      `Tahmini Piyasa Değeri: ${marketValStr}`
+    ],
+    label: "Live API" as const
+  };
+}
+
 function fallbackPlayers(): RawPlayer[] {
   const team: RawTeam = {
     id: GALATASARAY_TEAM_ID,
@@ -898,11 +1031,11 @@ function positionOrder(position: string) {
 }
 
 export function compareRosterPlayers(a: PlayerProfile, b: PlayerProfile) {
-  const roleOrder = (a.squadRole === "starter" ? 0 : 1) - (b.squadRole === "starter" ? 0 : 1);
-  if (roleOrder) return roleOrder;
-
   const position = positionOrder(a.position) - positionOrder(b.position);
   if (position) return position;
+
+  const roleOrder = (a.squadRole === "starter" ? 0 : 1) - (b.squadRole === "starter" ? 0 : 1);
+  if (roleOrder) return roleOrder;
 
   return Number(a.jerseyNumber || 999) - Number(b.jerseyNumber || 999);
 }
