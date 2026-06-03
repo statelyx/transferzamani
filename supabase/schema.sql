@@ -178,3 +178,56 @@ for all
 to service_role
 using (true)
 with check (true);
+
+create table if not exists public.player_master_index (
+  master_id text primary key,
+  cache_key text unique,
+  player_name text not null,
+  normalized_name text not null,
+  continent text,
+  country_slug text,
+  country_name text,
+  country_code text,
+  position text,
+  height_cm integer,
+  date_of_birth date,
+  birth_place text,
+  payload jsonb not null,
+  source text,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.player_master_index add column if not exists cache_key text;
+alter table public.player_master_index add column if not exists normalized_name text;
+alter table public.player_master_index add column if not exists continent text;
+alter table public.player_master_index add column if not exists country_slug text;
+alter table public.player_master_index add column if not exists country_name text;
+alter table public.player_master_index add column if not exists country_code text;
+alter table public.player_master_index add column if not exists position text;
+alter table public.player_master_index add column if not exists height_cm integer;
+alter table public.player_master_index add column if not exists date_of_birth date;
+alter table public.player_master_index add column if not exists birth_place text;
+alter table public.player_master_index add column if not exists source text;
+
+create unique index if not exists player_master_index_cache_key_idx on public.player_master_index (cache_key);
+create index if not exists player_master_index_normalized_name_idx on public.player_master_index (normalized_name);
+create index if not exists player_master_index_country_idx on public.player_master_index (country_code);
+create index if not exists player_master_index_position_idx on public.player_master_index (position);
+create index if not exists player_master_index_updated_at_idx on public.player_master_index (updated_at desc);
+
+alter table public.player_master_index enable row level security;
+
+drop policy if exists "Public read player master index" on public.player_master_index;
+create policy "Public read player master index"
+on public.player_master_index
+for select
+to anon, authenticated
+using (true);
+
+drop policy if exists "Service role writes player master index" on public.player_master_index;
+create policy "Service role writes player master index"
+on public.player_master_index
+for all
+to service_role
+using (true)
+with check (true);

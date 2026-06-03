@@ -20,6 +20,14 @@ type SupabaseCacheRecord<T> = {
   player_name?: string;
   position?: string;
   market_value?: number | null;
+  master_id?: string;
+  normalized_name?: string;
+  continent?: string;
+  country_slug?: string;
+  country_code?: string;
+  height_cm?: number | null;
+  date_of_birth?: string | null;
+  birth_place?: string | null;
 };
 
 const SUPABASE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
@@ -83,6 +91,39 @@ export async function writeSupabaseCache<T>(
   }
 }
 
+export async function upsertSupabaseRows<T>(
+  table: string,
+  rows: Array<Omit<SupabaseCacheRecord<T>, "updated_at"> & { updated_at?: string }>,
+  conflictKey = "cache_key"
+) {
+  const config = supabaseConfig();
+  if (!config || rows.length === 0) return false;
+
+  try {
+    const url = new URL(`${config.url}/rest/v1/${table}`);
+    url.searchParams.set("on_conflict", conflictKey);
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        ...supabaseHeaders(config.key),
+        Prefer: "resolution=merge-duplicates,return=minimal"
+      },
+      signal: AbortSignal.timeout(15_000),
+      body: JSON.stringify(
+        rows.map((row) => ({
+          ...row,
+          updated_at: row.updated_at || new Date().toISOString()
+        }))
+      )
+    });
+
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function listSupabaseCacheRows<T>(table: string, limit = 500) {
   const config = supabaseConfig();
   if (!config) return [];
@@ -119,6 +160,34 @@ export async function listSupabaseRows<T>(
     const url = new URL(`${config.url}/rest/v1/${table}`);
     url.searchParams.set("select", select);
     url.searchParams.set("order", order);
+    url.searchParams.set("limit", String(limit));
+
+    const response = await fetch(url, {
+      headers: supabaseHeaders(config.key),
+      cache: "no-store",
+      signal: AbortSignal.timeout(8_000)
+    });
+
+    if (!response.ok) return [];
+    return (await response.json()) as T[];
+  } catch {
+    return [];
+  }
+}
+
+export async function querySupabaseRows<T>(
+  table: string,
+  params: Record<string, string>,
+  limit = 50
+) {
+  const config = supabaseConfig();
+  if (!config) return [];
+
+  try {
+    const url = new URL(`${config.url}/rest/v1/${table}`);
+    for (const [key, value] of Object.entries(params)) {
+      url.searchParams.set(key, value);
+    }
     url.searchParams.set("limit", String(limit));
 
     const response = await fetch(url, {
