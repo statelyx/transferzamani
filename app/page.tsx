@@ -1,7 +1,6 @@
 "use client";
 
 import type { GalatasarayPayload, PlayerProfile, Rumor, TeamEvent } from "@/lib/sofasport";
-import logoImage from "@/logo.png";
 import {
   Activity,
   AlertCircle,
@@ -80,7 +79,7 @@ export default function Home() {
     setError(null);
 
     try {
-      const response = await fetch("/api/galatasaray", { cache: "no-store" });
+      const response = await fetch("/api/galatasaray");
       const payload = await response.json();
 
       if (!response.ok) throw new Error(payload.error || "Veri alinamadi.");
@@ -226,7 +225,7 @@ function SideNav({ view, setView }: { view: ViewKey; setView: (view: ViewKey) =>
     <aside className="side-nav">
       <div className="brand-lockup">
         <div className="brand-icon">
-          <LogoMark />
+          S11
         </div>
         <div>
           <strong>STAT11</strong>
@@ -248,13 +247,6 @@ function SideNav({ view, setView }: { view: ViewKey; setView: (view: ViewKey) =>
         </button>
       </div>
     </aside>
-  );
-}
-
-function LogoMark({ className = "" }: { className?: string }) {
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img className={`logo-mark ${className}`} src={logoImage.src} alt="STAT11" decoding="async" />
   );
 }
 
@@ -339,7 +331,6 @@ function HomeDashboard({
     <div className="page-flow">
       <section className="hero-grid">
         <div className="hero-panel pitch-card">
-          <LogoMark className="hero-logo-mark" />
           <div className="hero-copy">
             <span className="kicker">DIGITAL PITCH</span>
             <h1>STAT11</h1>
@@ -619,6 +610,48 @@ function LineupBuilder({
   avgAge: number;
   avgRating: number;
 }) {
+  const [selectedSlot, setSelectedSlot] = useState<string>(lineupSlots[0].id);
+  const [lineupQuery, setLineupQuery] = useState("");
+  const usedIds = Object.values(lineup).filter(Boolean) as number[];
+  const selectedSlotMeta = lineupSlots.find((slot) => slot.id === selectedSlot) || lineupSlots[0];
+  const selectedSlotPlayer = players.find((player) => player.id === lineup[selectedSlot]);
+  const normalizedLineupQuery = normalize(lineupQuery);
+  const searchablePlayers = players
+    .filter((player) => {
+      if (!normalizedLineupQuery) return true;
+
+      return (
+        normalize(player.name).includes(normalizedLineupQuery) ||
+        normalize(player.team.name).includes(normalizedLineupQuery) ||
+        normalize(player.country).includes(normalizedLineupQuery) ||
+        normalize(player.positionLabel).includes(normalizedLineupQuery)
+      );
+    })
+    .sort((a, b) => {
+      const roleScore =
+        (b.position === selectedSlotMeta.role ? 1 : 0) - (a.position === selectedSlotMeta.role ? 1 : 0);
+      if (roleScore) return roleScore;
+
+      return b.metrics.future - a.metrics.future;
+    });
+
+  const assignPlayerToSelectedSlot = (playerId: number | null) => {
+    setLineup((current) => {
+      const next = { ...current };
+
+      if (playerId) {
+        for (const slotId of Object.keys(next)) {
+          if (slotId !== selectedSlot && next[slotId] === playerId) {
+            next[slotId] = null;
+          }
+        }
+      }
+
+      next[selectedSlot] = playerId;
+      return next;
+    });
+  };
+
   return (
     <div className="lineup-workspace">
       <section className="pitch-board">
@@ -651,7 +684,9 @@ function LineupBuilder({
                 slot={slot}
                 player={player || null}
                 players={players}
-                usedIds={Object.values(lineup).filter(Boolean) as number[]}
+                selected={selectedSlot === slot.id}
+                usedIds={usedIds}
+                onSelectSlot={() => setSelectedSlot(slot.id)}
                 onChange={(id) =>
                   setLineup((current) => ({
                     ...current,
@@ -664,6 +699,46 @@ function LineupBuilder({
         </div>
       </section>
       <aside className="lineup-panel">
+        <div className="lineup-search-panel glass-panel">
+          <div className="panel-title">
+            <div>
+              <span className="kicker">OYUNCU ARAMA</span>
+              <h2>{selectedSlotMeta.label} slotu</h2>
+            </div>
+            <Search size={20} />
+          </div>
+          <label className="lineup-search">
+            <Search size={16} />
+            <input
+              value={lineupQuery}
+              onChange={(event) => setLineupQuery(event.target.value)}
+              placeholder="Oyuncu, takim, ulke veya mevki ara..."
+              type="search"
+            />
+          </label>
+          {selectedSlotPlayer ? (
+            <button className="clear-slot" type="button" onClick={() => assignPlayerToSelectedSlot(null)}>
+              {selectedSlotPlayer.name} slotunu temizle
+            </button>
+          ) : null}
+          <div className="lineup-search-results">
+            {searchablePlayers.slice(0, 10).map((player) => (
+              <button
+                className={lineup[selectedSlot] === player.id ? "active" : ""}
+                key={player.id}
+                type="button"
+                onClick={() => assignPlayerToSelectedSlot(player.id)}
+              >
+                <PlayerAvatar player={player} size="sm" />
+                <span>
+                  <strong>{player.name}</strong>
+                  <em>{player.team.name} / {player.positionLabel} / {player.country}</em>
+                </span>
+                <b>{usedIds.includes(player.id) && lineup[selectedSlot] !== player.id ? "TASINIR" : player.marketValueLabel}</b>
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="glass-panel">
           <div className="panel-title">
             <div>
@@ -817,23 +892,36 @@ function LineupSlot({
   slot,
   player,
   players,
+  selected,
   usedIds,
+  onSelectSlot,
   onChange
 }: {
   slot: (typeof lineupSlots)[number];
   player: PlayerProfile | null;
   players: PlayerProfile[];
+  selected: boolean;
   usedIds: number[];
+  onSelectSlot: () => void;
   onChange: (id: number | null) => void;
 }) {
-  const options = players.filter((item) => item.position === slot.role || !usedIds.includes(item.id));
+  const options = players
+    .filter((item) => item.position === slot.role || !usedIds.includes(item.id) || item.id === player?.id)
+    .sort((a, b) => b.metrics.future - a.metrics.future);
 
   return (
-    <div className={`lineup-slot row-${slot.row} col-${slot.col}`}>
-      <button type="button" onClick={() => onChange(null)}>
+    <div className={`lineup-slot row-${slot.row} col-${slot.col} ${selected ? "selected" : ""}`}>
+      <button type="button" onClick={onSelectSlot}>
         {player ? <PlayerAvatar player={player} size="lineup" /> : <Plus size={22} />}
       </button>
-      <select value={player?.id || ""} onChange={(event) => onChange(event.target.value ? Number(event.target.value) : null)}>
+      <select
+        value={player?.id || ""}
+        onFocus={onSelectSlot}
+        onChange={(event) => {
+          onSelectSlot();
+          onChange(event.target.value ? Number(event.target.value) : null);
+        }}
+      >
         <option value="">{slot.label}</option>
         {options.map((item) => (
           <option disabled={usedIds.includes(item.id) && item.id !== player?.id} key={item.id} value={item.id}>

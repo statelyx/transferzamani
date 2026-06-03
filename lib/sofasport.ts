@@ -214,9 +214,9 @@ export type GalatasarayPayload = {
 };
 
 const API_BASE = "https://sofasport.p.rapidapi.com";
-const CACHE_TTL_MS = 5 * 60 * 1000;
-const STALE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-const CACHE_VERSION = 3;
+const CACHE_TTL_MS = 30 * 60 * 1000;
+const STALE_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const CACHE_VERSION = 4;
 let memoryCache: { payload: GalatasarayPayload; timestamp: number } | null = null;
 
 async function sofaFetch<T>(path: string): Promise<T> {
@@ -234,7 +234,7 @@ async function sofaFetch<T>(path: string): Promise<T> {
       "x-rapidapi-key": key
     },
     next: {
-      revalidate: 120
+      revalidate: 1800
     }
   });
 
@@ -504,7 +504,7 @@ function normalizePlayer(
       : null,
     contractMonthsRemaining,
     contractRisk: contractRisk(contractMonthsRemaining),
-    imageUrl: `https://img.sofascore.com/api/v1/player/${player.id}/image`,
+    imageUrl: `/api/image/player/${player.id}`,
     team: {
       id: player.team?.id || GALATASARAY_TEAM_ID,
       name: player.team?.name || "Galatasaray",
