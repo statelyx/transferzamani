@@ -21,6 +21,27 @@
   --radius: 8px;
 }
 
+@media (prefers-color-scheme: light) {
+  :root {
+    --background: #f4f7f5;
+    --surface: #edf3ef;
+    --surface-low: #ffffff;
+    --surface-mid: #f7faf8;
+    --surface-high: #e5ede8;
+    --surface-bright: #d7e2dc;
+    --text: #15211b;
+    --muted: #506057;
+    --muted-dim: #6d7b72;
+    --line: rgba(12, 30, 20, 0.12);
+    --line-strong: rgba(12, 30, 20, 0.22);
+    --primary: #0ea95a;
+    --primary-strong: #087d40;
+    --secondary: #137d47;
+    --tertiary: #2b7a42;
+    --pitch: #dff4e7;
+  }
+}
+
 * {
   box-sizing: border-box;
 }

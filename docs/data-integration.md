@@ -5,7 +5,8 @@ Tam takim, kadro, oyuncu fotografi, lig fiksturu ve transfer/haber akisi icin ca
 ## Gerekli Vercel environment variables
 
 - `RAPIDAPI_KEY`: RapidAPI uzerindeki futbol/SofaSport anahtari.
-- `RAPIDAPI_HOST`: Kullanilan RapidAPI host degeri. Mevcut varsayilan: `sofasport.p.rapidapi.com`.
+- `RAPIDAPI_HOST`: Kullanilan RapidAPI host degeri. Mevcut varsayilan: `sofascore.p.rapidapi.com`.
+- `SOFASCORE_RATE_LIMIT_MS`: Server-side istekler arasindaki minimum bekleme. Varsayilan: `350`.
 - `NEXT_PUBLIC_SUPABASE_URL`: Supabase proje URL'i.
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Public anon key.
 - `SUPABASE_SERVICE_ROLE_KEY`: Sadece server-side sync/API route icin. Client'a acilmayacak.
@@ -26,6 +27,21 @@ Tam takim, kadro, oyuncu fotografi, lig fiksturu ve transfer/haber akisi icin ca
 2. Supabase tablolarina upsert edilir.
 3. Frontend lig/takim/kadro ekranlari Supabase'den okur.
 4. RapidAPI rate limit olursa son temiz Supabase kaydi gosterilir.
+
+## Mevcut servis katmani
+
+- Endpoint registry: `lib/sofascore/endpoints.ts`
+- Cache, retry ve rate-limit client: `lib/sofascore/client.ts`
+- Ortak TypeScript tipleri: `lib/sofascore/types.ts`
+- Server-side proxy: `app/api/sofascore/[...endpoint]/route.ts`
+
+Ornek kullanim:
+
+```ts
+await sofaScoreGet("teams/get-squad", { teamId: 3061 });
+await sofaScoreGet("tournaments/get-standings", { tournamentId: 52, seasonId: 63814 });
+await sofaScoreGet("players/detail", { playerId: 822471 });
+```
 
 ## Once baglanacak veri
 

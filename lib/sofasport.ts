@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { sofaScoreGet } from "@/lib/sofascore/client";
 
 export const GALATASARAY_TEAM_ID = 3061;
 
@@ -220,10 +221,10 @@ export type GalatasarayPayload = {
   };
 };
 
-const API_BASE = "https://sofasport.p.rapidapi.com";
 const CACHE_TTL_MS = 30 * 60 * 1000;
 const STALE_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const CACHE_VERSION = 5;
+const CACHE_VERSION = 6;
+const API_BASE = `https://${process.env.RAPIDAPI_HOST || "sofascore.p.rapidapi.com"}`;
 let memoryCache: { payload: GalatasarayPayload; timestamp: number } | null = null;
 
 async function sofaFetch<T>(path: string): Promise<T> {
@@ -333,31 +334,30 @@ function cacheFilePath() {
 }
 
 async function loadLiveGalatasarayPayload(): Promise<GalatasarayPayload> {
-  const [playersResponse, nearEventsResponse] = await Promise.all([
-    sofaFetch<{
-      data: {
-        players: Array<{ player: RawPlayer }>;
-        foreignPlayers?: Array<{ player: RawPlayer }>;
-        nationalPlayers?: Array<{ player: RawPlayer }>;
-      };
-    }>(`/v1/teams/players?team_id=${GALATASARAY_TEAM_ID}`),
-    sofaFetch<{
-      data: {
-        previousEvent?: RawEvent | null;
-        nextEvent?: RawEvent | null;
-      };
-    }>(`/v1/teams/near-events?team_id=${GALATASARAY_TEAM_ID}`)
+  const [playersResult, nearEventsResult] = await Promise.all([
+    sofaScoreGet<{
+      players?: Array<{ player: RawPlayer }>;
+      foreignPlayers?: Array<{ player: RawPlayer }>;
+      nationalPlayers?: Array<{ player: RawPlayer }>;
+    }>("teams/get-squad", { teamId: GALATASARAY_TEAM_ID }),
+    sofaScoreGet<{
+      previousEvent?: RawEvent | null;
+      nextEvent?: RawEvent | null;
+    }>("teams/get-near-events", { teamId: GALATASARAY_TEAM_ID })
   ]);
 
-  const previousEvent = nearEventsResponse.data.previousEvent || null;
+  const playersResponse = playersResult.data;
+  const nearEventsResponse = nearEventsResult.data;
+  const previousEvent = nearEventsResponse.previousEvent || null;
   const lineups = previousEvent?.id ? await getEventLineups(previousEvent.id) : null;
   const lineupRoles = buildLineupRoleMap(lineups);
 
-  const players = playersResponse.data.players
+  const squadPlayers = playersResponse.players || [];
+  const players = squadPlayers
     .map(({ player }) => normalizePlayer(player, lineupRoles.get(player.id)))
     .sort(compareRosterPlayers);
 
-  const teamFromPlayer = playersResponse.data.players[0]?.player.team;
+  const teamFromPlayer = squadPlayers[0]?.player.team;
 
   return {
     generatedAt: new Date().toISOString(),
@@ -383,27 +383,25 @@ async function loadLiveGalatasarayPayload(): Promise<GalatasarayPayload> {
         text: teamFromPlayer?.teamColors?.text || "#111111"
       },
       playerCount: players.length,
-      foreignCount: playersResponse.data.foreignPlayers?.length || 0,
-      nationalCount: playersResponse.data.nationalPlayers?.length || 0
+      foreignCount: playersResponse.foreignPlayers?.length || 0,
+      nationalCount: playersResponse.nationalPlayers?.length || 0
     },
     players,
     events: {
       previous: normalizeEvent(previousEvent),
-      next: normalizeEvent(nearEventsResponse.data.nextEvent || null)
+      next: normalizeEvent(nearEventsResponse.nextEvent || null)
     },
     rumors: buildDemoRumors(players),
     endpoints: {
-      players: `/v1/teams/players?team_id=${GALATASARAY_TEAM_ID}`,
-      nearEvents: `/v1/teams/near-events?team_id=${GALATASARAY_TEAM_ID}`
+      players: `teams/get-squad?teamId=${GALATASARAY_TEAM_ID}`,
+      nearEvents: `teams/get-near-events?teamId=${GALATASARAY_TEAM_ID}`
     }
   };
 }
 
 async function getEventLineups(eventId: number) {
   try {
-    const response = await sofaFetch<{ data: RawLineups }>(
-      `/v1/events/lineups?event_id=${eventId}`
-    );
+    const response = await sofaScoreGet<RawLineups>("matches/get-lineups", { matchId: eventId });
 
     return response.data;
   } catch {
@@ -469,8 +467,8 @@ function buildFallbackPayload(reason: string): GalatasarayPayload {
     },
     rumors: buildDemoRumors(players),
     endpoints: {
-      players: `/v1/teams/players?team_id=${GALATASARAY_TEAM_ID}`,
-      nearEvents: `/v1/teams/near-events?team_id=${GALATASARAY_TEAM_ID}`
+      players: `teams/get-squad?teamId=${GALATASARAY_TEAM_ID}`,
+      nearEvents: `teams/get-near-events?teamId=${GALATASARAY_TEAM_ID}`
     }
   };
 }
