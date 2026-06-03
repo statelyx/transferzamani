@@ -3,17 +3,45 @@ import { loadPlayersMasterIndex } from "@/lib/football/player-master";
 import { upsertSupabaseRows } from "@/lib/supabase/rest";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const BATCH_SIZE = 500;
+const DEFAULT_IMPORT_LIMIT = 1000;
 
 export async function POST(request: NextRequest) {
+  return importPlayersMaster(request);
+}
+
+export async function GET(request: NextRequest) {
+  if (request.nextUrl.searchParams.get("run") === "1") {
+    return importPlayersMaster(request);
+  }
+
+  const players = await loadPlayersMasterIndex();
+  const byContinent = players.reduce<Record<string, number>>((acc, player) => {
+    acc[player.continent] = (acc[player.continent] || 0) + 1;
+    return acc;
+  }, {});
+
+  return NextResponse.json({
+    ok: true,
+    total: players.length,
+    byContinent,
+    table: "player_master_index",
+    importHint: "/api/admin/import-players-master?run=1&offset=0&limit=1000&secret=CRON_SECRET"
+  });
+}
+
+async function importPlayersMaster(request: NextRequest) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: "Yetkisiz import istegi." }, { status: 401 });
   }
 
   const allPlayers = await loadPlayersMasterIndex();
   const offset = Math.max(Number(request.nextUrl.searchParams.get("offset") || 0), 0);
-  const limit = Number(request.nextUrl.searchParams.get("limit") || 0);
+  const importAll = request.nextUrl.searchParams.get("all") === "1";
+  const limit = importAll ? 0 : Number(request.nextUrl.searchParams.get("limit") || DEFAULT_IMPORT_LIMIT);
   const players = limit > 0 ? allPlayers.slice(offset, offset + limit) : allPlayers.slice(offset);
   let imported = 0;
   let failedBatches = 0;
@@ -49,26 +77,19 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({
+    ok: failedBatches === 0,
     total: allPlayers.length,
     selected: players.length,
     offset,
+    nextOffset: offset + imported < allPlayers.length ? offset + imported : null,
+    remaining: Math.max(allPlayers.length - offset - imported, 0),
     imported,
     failedBatches,
-    table: "player_master_index"
-  });
-}
-
-export async function GET() {
-  const players = await loadPlayersMasterIndex();
-  const byContinent = players.reduce<Record<string, number>>((acc, player) => {
-    acc[player.continent] = (acc[player.continent] || 0) + 1;
-    return acc;
-  }, {});
-
-  return NextResponse.json({
-    total: players.length,
-    byContinent,
-    table: "player_master_index"
+    table: "player_master_index",
+    nextHint:
+      offset + imported < allPlayers.length
+        ? `/api/admin/import-players-master?run=1&offset=${offset + imported}&limit=${limit || DEFAULT_IMPORT_LIMIT}&secret=CRON_SECRET`
+        : null
   });
 }
 
