@@ -397,9 +397,12 @@ function HomeDashboard({
   const [countriesOpen, setCountriesOpen] = useState(false);
   const [selectedLeague, setSelectedLeague] = useState(leagueCatalog[5]);
   const [selectedTeam, setSelectedTeam] = useState("Galatasaray");
+  const [remoteSquad, setRemoteSquad] = useState<PlayerProfile[]>([]);
+  const [squadLoading, setSquadLoading] = useState(false);
+  const [squadError, setSquadError] = useState<string | null>(null);
   const selectedTeams = fullLeagueTeams[selectedLeague.id] || leagueTeams[selectedLeague.id] || [];
   const hasConnectedSquad = selectedTeam === "Galatasaray" || selectedTeam === data?.team.name;
-  const selectedTeamSquad = hasConnectedSquad ? players.slice(0, 12) : [];
+  const selectedTeamSquad = hasConnectedSquad ? players : remoteSquad;
   const portalPills = [
     { label: "Canli veri", value: liveStatusText(data), tone: data ? "green" : "amber" },
     { label: "Transfer duyumu", value: rumors[0]?.headline || "Yeni sinyal bekleniyor", tone: "green" },
@@ -412,6 +415,41 @@ function HomeDashboard({
     },
     { label: "Kadro havuzu", value: `${players.length || filteredPlayers.length} profil`, tone: "neutral" }
   ];
+
+  useEffect(() => {
+    if (hasConnectedSquad || !selectedTeam) {
+      setRemoteSquad([]);
+      setSquadError(null);
+      setSquadLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    setSquadLoading(true);
+    setSquadError(null);
+
+    fetch(`/api/football/team-squad?team=${encodeURIComponent(selectedTeam)}&league=${encodeURIComponent(selectedLeague.id)}`, {
+      signal: controller.signal
+    })
+      .then(async (response) => {
+        const body = await response.json();
+        if (!response.ok) throw new Error(body.error || "Kadro alinamadi.");
+        return body as { players: PlayerProfile[] };
+      })
+      .then((payload) => {
+        setRemoteSquad(payload.players || []);
+      })
+      .catch((error) => {
+        if (error.name === "AbortError") return;
+        setRemoteSquad([]);
+        setSquadError(error instanceof Error ? error.message : "Kadro alinamadi.");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setSquadLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [hasConnectedSquad, selectedLeague.id, selectedTeam]);
 
   return (
     <div className="page-flow portal-flow">
@@ -511,7 +549,14 @@ function HomeDashboard({
             <Shield size={18} />
           </div>
           <div className="squad-list">
-            {selectedTeamSquad.length ? (
+            {squadLoading ? (
+              Array.from({ length: 6 }, (_, index) => <SkeletonRow key={index} />)
+            ) : squadError ? (
+              <div className="squad-empty error">
+                <strong>Kadro alinamadi</strong>
+                <p>{squadError}</p>
+              </div>
+            ) : selectedTeamSquad.length ? (
               selectedTeamSquad.slice(0, 8).map((player) => (
                 <button type="button" key={player.id} onClick={() => onSelectPlayer(player.id)}>
                   <PlayerAvatar player={player} size="sm" />
@@ -525,7 +570,7 @@ function HomeDashboard({
             ) : (
               <div className="squad-empty">
                 <strong>Kadro verisi bekleniyor</strong>
-                <p>Bu takim icin oyuncu listesi API ve Supabase senkronu baglandiktan sonra dolacak.</p>
+                <p>Bu takim icin SofaScore kadrosu henuz eslesmedi.</p>
               </div>
             )}
           </div>

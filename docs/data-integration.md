@@ -10,8 +10,10 @@ Tam takim, kadro, oyuncu fotografi, lig fiksturu ve transfer/haber akisi icin ca
 - `SOFASCORE_RAPIDAPI_HOST`: SofaScore RapidAPI host degeri. Bu proje icin: `sofascore.p.rapidapi.com`.
 - `SOFASCORE_RATE_LIMIT_MS`: Server-side istekler arasindaki minimum bekleme. Varsayilan: `350`.
 - `NEXT_PUBLIC_SUPABASE_URL`: Supabase proje URL'i.
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Public anon key.
-- `SUPABASE_SERVICE_ROLE_KEY`: Sadece server-side sync/API route icin. Client'a acilmayacak.
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: Supabase publishable key. Browser tarafinda kullanilabilir.
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: Eski anon public JWT. Geriye donuk destek icin opsiyonel.
+- `SUPABASE_SECRET_KEY`: Supabase secret key. Sadece server-side.
+- `SUPABASE_SERVICE_ROLE_KEY`: Eski service_role JWT. Sadece server-side; client'a acilmayacak.
 
 ## Supabase tablo omurgasi
 
@@ -36,6 +38,9 @@ Tam takim, kadro, oyuncu fotografi, lig fiksturu ve transfer/haber akisi icin ca
 - Cache, retry ve rate-limit client: `lib/sofascore/client.ts`
 - Ortak TypeScript tipleri: `lib/sofascore/types.ts`
 - Server-side proxy: `app/api/sofascore/[...endpoint]/route.ts`
+- Takim kadro API route'u: `app/api/football/team-squad/route.ts`
+- Supabase REST cache helper: `lib/supabase/rest.ts`
+- Supabase tablo SQL'i: `supabase/schema.sql`
 
 Ornek kullanim:
 

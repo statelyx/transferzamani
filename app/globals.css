@@ -667,6 +667,15 @@ h3,
   line-height: 1.45;
 }
 
+.squad-empty.error {
+  border-color: rgba(255, 107, 107, 0.42);
+  background: var(--error-soft);
+}
+
+.squad-empty.error strong {
+  color: var(--error);
+}
+
 .squad-open {
   width: 100%;
 }

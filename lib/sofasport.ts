@@ -473,7 +473,7 @@ function buildFallbackPayload(reason: string): GalatasarayPayload {
   };
 }
 
-function normalizePlayer(
+export function normalizePlayer(
   player: RawPlayer,
   squadRole: PlayerProfile["squadRole"] = "bench"
 ): PlayerProfile {
@@ -897,7 +897,7 @@ function positionOrder(position: string) {
   return { G: 0, D: 1, M: 2, F: 3 }[position as "G" | "D" | "M" | "F"] ?? 9;
 }
 
-function compareRosterPlayers(a: PlayerProfile, b: PlayerProfile) {
+export function compareRosterPlayers(a: PlayerProfile, b: PlayerProfile) {
   const roleOrder = (a.squadRole === "starter" ? 0 : 1) - (b.squadRole === "starter" ? 0 : 1);
   if (roleOrder) return roleOrder;
 
