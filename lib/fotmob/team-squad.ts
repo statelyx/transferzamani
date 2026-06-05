@@ -1,5 +1,6 @@
 import { fotMobGet } from "@/lib/fotmob/client";
 import { compareRosterPlayers, type PlayerProfile } from "@/lib/sofasport";
+import { estimateMarketValue, formatMarketValueAll } from "@/lib/football/market-value";
 
 type FotMobSquadGroup = {
   title?: string;
@@ -121,7 +122,15 @@ function fotMobMemberToProfile(
   position: "G" | "D" | "M" | "F",
   starter: boolean
 ): PlayerProfile {
-  const marketValue = member.transferValue ?? null;
+  const marketValue =
+    member.transferValue ??
+    estimateMarketValue({
+      seed: `fotmob:${member.id}:${member.name}`,
+      position,
+      age: member.age ?? calculateAge(member.dateOfBirth || null),
+      heightCm: member.height,
+      countryCode: member.ccode
+    });
   const age = member.age ?? calculateAge(member.dateOfBirth || null);
   const ratingScore = member.rating ? Math.round(member.rating * 10) : 50;
 
@@ -146,6 +155,7 @@ function fotMobMemberToProfile(
     userCount: Math.round((member.rating || 0) * 10_000),
     marketValue,
     marketValueLabel: formatMarketValue(marketValue),
+    marketValues: formatMarketValueAll(marketValue),
     contractUntil: null,
     contractMonthsRemaining: null,
     contractRisk: "Orta",

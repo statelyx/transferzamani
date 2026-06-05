@@ -4,6 +4,7 @@ import { freeLiveFootballSearchPlayers, type FreeLiveFootballSuggestion } from "
 import { footballServiceGet } from "@/lib/providers/footballservice";
 import { normalizePlayer, type PlayerProfile } from "@/lib/sofasport";
 import { sofaScoreGet, SofaScoreApiError } from "@/lib/sofascore/client";
+import { estimateMarketValue, formatEur, formatMarketValueAll } from "@/lib/football/market-value";
 import type { SofaScorePlayer } from "@/lib/sofascore/types";
 import { querySupabaseRows, writeSupabaseCache } from "@/lib/supabase/rest";
 
@@ -164,6 +165,12 @@ async function searchFreeLiveFootball(query: string) {
 function freeLiveSuggestionToProfile(item: FreeLiveFootballSuggestion): PlayerProfile {
   const id = Number(item.id);
   const teamId = Number(item.teamId || 0);
+  const marketValue = estimateMarketValue({
+    seed: `free-live:${id}:${item.name || ""}`,
+    position: "M",
+    age: null,
+    countryCode: item.ccode
+  });
 
   return {
     id,
@@ -181,33 +188,34 @@ function freeLiveSuggestionToProfile(item: FreeLiveFootballSuggestion): PlayerPr
     age: null,
     dateOfBirth: null,
     preferredFoot: "Bilinmiyor",
-    country: "Bilinmiyor",
-    countryCode: "",
+    country: item.ccode ? item.ccode.toUpperCase() : "Bilinmiyor",
+    countryCode: item.ccode || "",
     userCount: Number(item.score || 0),
-    marketValue: null,
-    marketValueLabel: "API bekliyor",
+    marketValue,
+    marketValueLabel: formatEur(marketValue),
+    marketValues: formatMarketValueAll(marketValue),
     contractUntil: null,
     contractMonthsRemaining: null,
     contractRisk: "Orta",
     imageUrl: `https://images.fotmob.com/image_resources/playerimages/${id}.png`,
     team: {
       id: teamId,
-      name: item.teamName || "Takim API ile eslestirilecek",
-      tournament: ""
+      name: item.teamName || "Serbest oyuncu havuzu",
+      tournament: item.leagueName || ""
     },
     metrics: {
-      market: 0,
+      market: clamp(Math.round(Math.log10(marketValue) * 14 - 45), 18, 92),
       attention: Math.min(Math.round((Number(item.score || 0) / 300_000) * 90), 90),
-      future: 50,
-      contract: 0,
-      physical: 50
+      future: 55,
+      contract: 50,
+      physical: 55
     },
     attributes: {
-      attack: 50,
-      defense: 50,
-      passing: 50,
-      physical: 50,
-      form: 50
+      attack: 55,
+      defense: 52,
+      passing: 58,
+      physical: 55,
+      form: 55
     }
   };
 }
@@ -343,4 +351,8 @@ function initials(value: string) {
 
 function escapePostgrestLike(value: string) {
   return value.replace(/[%*_]/g, "");
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
 }

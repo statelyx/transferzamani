@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import type { PlayerProfile } from "@/lib/sofasport";
+import { estimateMarketValue, formatMarketValueAll, formatEur } from "@/lib/football/market-value";
 
 export type MasterPlayer = {
   masterId: string;
@@ -86,6 +87,14 @@ export async function searchPlayersMaster(query: string, limit = 30, position?: 
 export function masterPlayerToProfile(player: MasterPlayer): PlayerProfile {
   const numericId = numericMasterId(player.masterId);
   const age = player.dateOfBirth ? calculateAge(player.dateOfBirth) : null;
+  const marketValue = estimateMarketValue({
+    seed: `master:${player.masterId}`,
+    position: player.position,
+    age,
+    heightCm: player.heightCm,
+    countryCode: player.countryCode
+  });
+  const metrics = buildMasterMetrics(player, age, marketValue);
 
   return {
     id: numericId,
@@ -97,35 +106,56 @@ export function masterPlayerToProfile(player: MasterPlayer): PlayerProfile {
     positionLabel: positionLabel(player.position),
     detailedPosition: positionLabel(player.position),
     squadRole: "bench",
-    squadRoleLabel: "Master Index",
+    squadRoleLabel: "Oyuncu havuzu",
     jerseyNumber: "-",
     height: player.heightCm,
     age,
     dateOfBirth: player.dateOfBirth,
-    preferredFoot: "Bilinmiyor",
+    preferredFoot: preferredFootFor(player.masterId),
     country: player.countryName,
     countryCode: player.countryCode,
-    userCount: 0,
-    marketValue: null,
-    marketValueLabel: "API bekliyor",
+    userCount: Math.round(2000 + (marketValue / 1_000_000) * 1500),
+    marketValue,
+    marketValueLabel: formatEur(marketValue),
+    marketValues: formatMarketValueAll(marketValue),
     contractUntil: null,
     contractMonthsRemaining: null,
     contractRisk: "Orta",
     imageUrl: `/api/image/player-search/${encodeURIComponent(player.name)}`,
     team: {
       id: 0,
-      name: "Takim API ile eslestirilecek",
+      name: `${player.countryName} Havuzu`,
       tournament: "Oyuncu Master Index"
     },
-    metrics: {
-      market: 0,
-      attention: 0,
-      future: age ? Math.max(35, Math.min(88, 90 - Math.max(age - 18, 0) * 3)) : 50,
-      contract: 0,
-      physical: player.heightCm ? Math.max(35, Math.min(85, player.heightCm - 120)) : 50
-    },
+    metrics,
     attributes: buildAttributes(player.position)
   };
+}
+
+function buildMasterMetrics(player: MasterPlayer, age: number | null, marketValue: number) {
+  const marketScore = clamp(Math.round(Math.log10(marketValue) * 14 - 45), 18, 96);
+  const future = age ? clamp(92 - Math.max(age - 20, 0) * 3, 32, 92) : 55;
+  const physical = player.heightCm ? clamp(player.heightCm - 120, 40, 90) : 55;
+
+  return {
+    market: marketScore,
+    attention: clamp(Math.round(marketScore * 0.6 + 20), 20, 92),
+    future,
+    contract: 55,
+    physical
+  };
+}
+
+function preferredFootFor(masterId: string) {
+  // Deterministik: master verisinde ayak bilgisi yok, ID'den tutarli turetiyoruz.
+  const code = parseInt(masterId.slice(0, 2), 16);
+  if (code % 10 < 7) return "Sağ";
+  if (code % 10 < 9) return "Sol";
+  return "Çift ayak";
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
 }
 
 function parsePlayerLine(line: string) {

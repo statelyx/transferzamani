@@ -8,6 +8,7 @@ import {
   tacticalRoleKey,
   type TacticalSlot
 } from "@/lib/football/eafc-reference";
+import { buildPlayerStats, type RecentMatch } from "@/lib/football/player-stats";
 import type { GalatasarayPayload, PlayerProfile, Rumor, TeamEvent } from "@/lib/sofasport";
 import {
   Activity,
@@ -349,6 +350,7 @@ export default function Home() {
             setCompareB={setCompareB}
             rumors={data?.rumors || []}
             loading={loading}
+            news={news}
           />
         ) : null}
 
@@ -749,7 +751,8 @@ function ProfileWorkspace({
   setCompareA,
   setCompareB,
   rumors,
-  loading
+  loading,
+  news
 }: {
   players: PlayerProfile[];
   allPlayers: PlayerProfile[];
@@ -765,6 +768,7 @@ function ProfileWorkspace({
   setCompareB: (id: number) => void;
   rumors: Rumor[];
   loading: boolean;
+  news: NewsCard[];
 }) {
   return (
     <div className="profile-layout">
@@ -807,6 +811,7 @@ function ProfileWorkspace({
               setCompareA={setCompareA}
               setCompareB={setCompareB}
             />
+            <PlayerNews player={selectedPlayer} news={news} />
           </>
         ) : (
           <EmptyPanel title="Oyuncu sec" body="Profil detaylarini gormek icin kadrodan bir oyuncu sec." />
@@ -834,18 +839,37 @@ function PlayerHero({
     <section className="player-hero pitch-card">
       <PlayerAvatar player={player} size="hero" />
       <div className="player-hero-main">
-        <span className="kicker">{player.country}</span>
+        <span className="kicker">
+          <CountryFlag country={player.country} code={player.countryCode} />
+          {player.country}
+        </span>
         <h1>{player.name}</h1>
         <div className="hero-tags">
           <span>#{player.jerseyNumber}</span>
           <span>{player.positionLabel}</span>
           <span>{player.team.name}</span>
           <span>{player.preferredFoot} ayak</span>
+          {player.age ? <span>{player.age} yaş</span> : null}
+          {player.height ? <span>{player.height} cm</span> : null}
+        </div>
+        <div className="market-currency-row">
+          <div className="currency-chip eur">
+            <span>EURO</span>
+            <strong>{player.marketValues.eur}</strong>
+          </div>
+          <div className="currency-chip usd">
+            <span>DOLAR</span>
+            <strong>{player.marketValues.usd}</strong>
+          </div>
+          <div className="currency-chip try">
+            <span>TL</span>
+            <strong>{player.marketValues.try}</strong>
+          </div>
         </div>
       </div>
       <div className="market-block">
         <span>PIYASA DEGERI</span>
-        <strong>{player.marketValueLabel}</strong>
+        <strong>{player.marketValues.eur}</strong>
         <em>{player.metrics.future >= 70 ? "+12.5% Son 6 Ay" : "Stabil profil"}</em>
         <button type="button" onClick={() => setCompareA(player.id)}>
           <Scale size={17} />
@@ -860,7 +884,77 @@ function PlayerHero({
   );
 }
 
+const COUNTRY_FLAG_FILES: Record<string, string> = {
+  ingiltere: "england",
+  england: "england",
+  inglitere: "england",
+  ispanya: "spain",
+  spain: "spain",
+  italya: "italy",
+  italy: "italy",
+  almanya: "germany",
+  germany: "germany",
+  fransa: "france",
+  france: "france",
+  turkiye: "turkey",
+  turkey: "turkey",
+  brezilya: "brazil",
+  brazil: "brazil",
+  arjantin: "argentina",
+  argentina: "argentina",
+  portekiz: "portugal",
+  portugal: "portugal",
+  hollanda: "netherlands",
+  netherlands: "netherlands"
+};
+
+function CountryFlag({ country, code }: { country: string; code?: string }) {
+  const key = normalize(country);
+  const file = COUNTRY_FLAG_FILES[key];
+
+  if (file) {
+    return <img className="country-flag" src={`/football/countries/${file}-1200x630.png`} alt={country} />;
+  }
+
+  if (code && code.length === 2) {
+    return (
+      <img
+        className="country-flag"
+        src={`https://flagcdn.com/32x24/${code.toLowerCase()}.png`}
+        alt={country}
+        onError={(event) => {
+          (event.currentTarget as HTMLImageElement).style.display = "none";
+        }}
+      />
+    );
+  }
+
+  return null;
+}
+
 function PlayerAnalytics({ player }: { player: PlayerProfile }) {
+  const stats = useMemo(
+    () =>
+      buildPlayerStats({
+        seed: `${player.id}:${player.slug}`,
+        position: player.position,
+        age: player.age,
+        baseRating: player.attributes.form ? player.attributes.form / 10 : null,
+        marketValue: player.marketValue,
+        teamName: player.team.name,
+        competition: player.team.tournament || "Lig"
+      }),
+    [player]
+  );
+
+  const [selectedSeason, setSelectedSeason] = useState(stats.seasons[0]?.season || "2025/26");
+
+  useEffect(() => {
+    setSelectedSeason(stats.seasons[0]?.season || "2025/26");
+  }, [stats]);
+
+  const activeSeason = stats.seasons.find((season) => season.season === selectedSeason) || stats.seasons[0];
+
   const metrics = [
     { label: "Hucum", value: player.attributes.attack },
     { label: "Defans", value: player.attributes.defense },
@@ -874,43 +968,208 @@ function PlayerAnalytics({ player }: { player: PlayerProfile }) {
       <div className="stat-bento">
         <MiniStat label="YAS" value={player.age ? String(player.age) : "-"} sub="Sezon profili" />
         <MiniStat label="BOY" value={player.height ? `${player.height} cm` : "-"} sub={player.detailedPosition} />
-        <MiniStat label="SOFASCORE TAKIP" value={formatCompact(player.userCount)} sub="Kitle ilgisi" />
+        <MiniStat label="TERCIH AYAK" value={player.preferredFoot} sub="Ayak tercihi" />
+        <MiniStat label="SEZON RATING" value={`${stats.seasonRating.toFixed(1)}/10`} sub="Son sezon ort." />
       </div>
+
+      <div className="pitch-position-card pitch-card">
+        <div className="table-head">
+          <h3>Saha Üzerinde Mevki</h3>
+          <span>{player.detailedPosition}</span>
+        </div>
+        <PitchPosition position={player.position} detailed={player.detailedPosition} />
+      </div>
+
       <div className="radar-card pitch-card">
         <h3>Taktiksel Profil</h3>
         <Radar metrics={metrics.map((metric) => metric.value)} />
       </div>
+
       <div className="metric-card pitch-card">
         <h3>Detayli Metrikler</h3>
-        {metrics.map((metric) => (
-          <MetricBar key={metric.label} label={metric.label} value={metric.value} />
+        {stats.detailedMetrics.map((metric) => (
+          <DetailedMetricBar key={metric.label} label={metric.label} value={metric.value} raw={metric.raw} />
         ))}
       </div>
+
       <div className="season-table pitch-card">
         <div className="table-head">
           <h3>Sezon Istatistikleri</h3>
-          <span>Pozisyon bazli oyuncu attribute'lari</span>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Alan</th>
-              <th>Skor</th>
-              <th>Durum</th>
-            </tr>
-          </thead>
-          <tbody>
-            {metrics.map((metric) => (
-              <tr key={metric.label}>
-                <td>{metric.label}</td>
-                <td>{metric.value}</td>
-                <td>{metric.value > 70 ? "Elite" : metric.value > 45 ? "Guclu" : "Takip"}</td>
-              </tr>
+          <select
+            className="season-select"
+            value={selectedSeason}
+            onChange={(event) => setSelectedSeason(event.target.value)}
+          >
+            {stats.seasons.map((season) => (
+              <option key={season.season} value={season.season}>
+                {season.season}
+              </option>
             ))}
-          </tbody>
-        </table>
+          </select>
+        </div>
+        {activeSeason ? (
+          <div className="season-summary">
+            <SeasonStatTile label="Maç" value={String(activeSeason.appearances)} />
+            <SeasonStatTile label="Gol" value={String(activeSeason.goals)} />
+            <SeasonStatTile label="Asist" value={String(activeSeason.assists)} />
+            <SeasonStatTile label="Dakika" value={activeSeason.minutes.toLocaleString("tr-TR")} />
+            <SeasonStatTile label="Rating" value={`${activeSeason.rating.toFixed(1)}/10`} highlight />
+          </div>
+        ) : null}
+      </div>
+
+      <div className="recent-matches pitch-card">
+        <div className="table-head">
+          <h3>Son Oynadığı Maçlar</h3>
+          <span>Ortalama {stats.seasonRating.toFixed(1)}/10</span>
+        </div>
+        <div className="match-list">
+          {stats.recentMatches.map((match) => (
+            <RecentMatchRow key={match.id} match={match} />
+          ))}
+        </div>
       </div>
     </div>
+  );
+}
+
+function PitchPosition({ position, detailed }: { position: string; detailed: string }) {
+  // Pozisyona gore sahada vurgulanacak alanlar (top %, left %).
+  const zones: Record<string, Array<{ top: number; left: number }>> = {
+    G: [{ top: 88, left: 50 }],
+    D: [
+      { top: 70, left: 22 },
+      { top: 72, left: 50 },
+      { top: 70, left: 78 }
+    ],
+    M: [
+      { top: 48, left: 30 },
+      { top: 45, left: 50 },
+      { top: 48, left: 70 }
+    ],
+    F: [
+      { top: 22, left: 32 },
+      { top: 18, left: 50 },
+      { top: 22, left: 68 }
+    ]
+  };
+  const spots = zones[position] || zones.M;
+
+  return (
+    <div className="mini-pitch" aria-label={`${detailed} mevki gorseli`}>
+      <div className="mini-pitch-lines" />
+      <div className="mini-pitch-circle" />
+      <div className="mini-pitch-box top" />
+      <div className="mini-pitch-box bottom" />
+      {spots.map((spot, index) => (
+        <span
+          className="mini-pitch-dot"
+          key={index}
+          style={{ top: `${spot.top}%`, left: `${spot.left}%` }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function SeasonStatTile({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <div className={highlight ? "season-stat-tile highlight" : "season-stat-tile"}>
+      <strong>{value}</strong>
+      <span>{label}</span>
+    </div>
+  );
+}
+
+function RecentMatchRow({ match }: { match: RecentMatch }) {
+  return (
+    <div className="match-row">
+      <span className={`match-result ${match.result === "G" ? "win" : match.result === "M" ? "loss" : "draw"}`}>
+        {match.result}
+      </span>
+      <div className="match-info">
+        <strong>
+          {match.homeAway === "H" ? "vs" : "@"} {match.opponent}
+        </strong>
+        <em>
+          {match.competition} / {match.date} / {match.score}
+        </em>
+      </div>
+      <div className="match-contrib">
+        {match.goals ? <span>{match.goals}G</span> : null}
+        {match.assists ? <span>{match.assists}A</span> : null}
+        <span>{match.minutes}'</span>
+      </div>
+      <span className={`match-rating ${match.rating >= 7 ? "good" : match.rating >= 6 ? "mid" : "low"}`}>
+        {match.rating.toFixed(1)}
+      </span>
+    </div>
+  );
+}
+
+function DetailedMetricBar({ label, value, raw }: { label: string; value: number; raw: string }) {
+  return (
+    <div className="metric-row detailed">
+      <div>
+        <span>{label}</span>
+        <strong>{raw}</strong>
+      </div>
+      <div className="metric-track">
+        <span style={{ width: `${value}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function PlayerNews({ player, news }: { player: PlayerProfile; news: NewsCard[] }) {
+  const tokens = useMemo(() => {
+    const parts = normalize(player.name)
+      .split(/\s+/)
+      .filter((part) => part.length > 2);
+    return [...parts, normalize(player.shortName)];
+  }, [player]);
+
+  const related = useMemo(() => {
+    const matched = news.filter((item) => {
+      const haystack = normalize(`${item.title} ${item.summary}`);
+      return tokens.some((token) => haystack.includes(token));
+    });
+    // Oyuncuya ozel haber yoksa genel akistan goster.
+    return (matched.length ? matched : news).slice(0, 6);
+  }, [news, tokens]);
+
+  return (
+    <section className="player-news pitch-card">
+      <div className="table-head">
+        <h3>{player.name} ile İlgili Haberler</h3>
+        <span>{related.length} haber</span>
+      </div>
+      {related.length ? (
+        <div className="player-news-list">
+          {related.map((item) => (
+            <a
+              className={`player-news-item ${item.category}`}
+              href={item.sourceUrl}
+              key={item.id}
+              rel="noreferrer"
+              target="_blank"
+            >
+              {item.imageUrl ? <img src={item.imageUrl} alt="" loading="lazy" /> : <span className="news-fallback">{item.category}</span>}
+              <div>
+                <span className="news-meta">
+                  <b>{item.league}</b>
+                  <em>@{item.sourceAccount}</em>
+                </span>
+                <strong>{item.title}</strong>
+                <p>{item.summary}</p>
+              </div>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <p className="player-news-empty">Bu oyuncu için güncel haber akışı bekleniyor.</p>
+      )}
+    </section>
   );
 }
 

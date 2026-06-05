@@ -4,6 +4,7 @@ import { footballServiceGet } from "@/lib/providers/footballservice";
 import { sofaScoreGet } from "@/lib/sofascore/client";
 import { getLiveTransferRumors } from "@/lib/football/transfers";
 import { getFotMobTeamSquad } from "@/lib/fotmob/team-squad";
+import { estimateMarketValue, formatMarketValueAll } from "@/lib/football/market-value";
 
 export const GALATASARAY_TEAM_ID = 3061;
 
@@ -137,6 +138,11 @@ export type PlayerProfile = {
   userCount: number;
   marketValue: number | null;
   marketValueLabel: string;
+  marketValues: {
+    eur: string;
+    usd: string;
+    try: string;
+  };
   contractUntil: string | null;
   contractMonthsRemaining: number | null;
   contractRisk: "Düşük" | "Orta" | "Yüksek";
@@ -578,7 +584,16 @@ export function normalizePlayer(
 ): PlayerProfile {
   const age = calculateAge(player.dateOfBirthTimestamp, player.dateOfBirth);
   const contractMonthsRemaining = calculateMonthsRemaining(player.contractUntilTimestamp);
-  const marketValue = player.proposedMarketValueRaw?.value ?? player.proposedMarketValue ?? null;
+  const rawMarketValue = player.proposedMarketValueRaw?.value ?? player.proposedMarketValue ?? null;
+  const marketValue =
+    rawMarketValue ??
+    estimateMarketValue({
+      seed: `sofa:${player.id}:${player.name}`,
+      position: player.position || "NA",
+      age,
+      heightCm: player.height,
+      countryCode: player.country?.alpha2 || player.country?.alpha3
+    });
   const profileMetrics = buildProfileMetrics({
     age,
     height: player.height,
@@ -611,6 +626,7 @@ export function normalizePlayer(
     userCount: player.userCount || 0,
     marketValue,
     marketValueLabel: formatMarketValue(marketValue),
+    marketValues: formatMarketValueAll(marketValue),
     contractUntil: player.contractUntilTimestamp
       ? formatDateFromTimestamp(player.contractUntilTimestamp)
       : null,
