@@ -35,11 +35,56 @@ export async function GET(request: NextRequest) {
   }
 
   const masterPlayers = await loadMasterCandidates(query, limit, position);
+  const freeLivePlayers = await searchFreeLiveFootball(query);
+
+  if (freeLivePlayers.players.length > 0) {
+    const players = sortByQueryRelevance(mergePlayerProfiles([
+      ...freeLivePlayers.players,
+      ...masterPlayers.map(masterPlayerToProfile)
+    ]), query).slice(0, limit);
+
+    await Promise.allSettled(
+      freeLivePlayers.players.map((player) =>
+        writeSupabaseCache("player_pool_cache", {
+          cache_key: `free-live-football:${player.id}`,
+          player_id: player.id,
+          player_name: player.name,
+          team_id: player.team.id,
+          team_name: player.team.name,
+          country_name: player.country,
+          league_name: player.team.tournament,
+          position: player.position,
+          market_value: player.marketValue,
+          payload: player,
+          source: "free-live-football"
+        })
+      )
+    );
+
+    return NextResponse.json(
+      {
+        players,
+        source: "free-live-football",
+        providerFallbacks: {
+          freeLiveFootball: {
+            ok: true,
+            count: freeLivePlayers.players.length,
+            source: freeLivePlayers.source
+          }
+        },
+        masterCount: masterPlayers.length
+      },
+      { headers: { "Cache-Control": "s-maxage=180, stale-while-revalidate=3600" } }
+    );
+  }
 
   try {
     const search = await sofaScoreGet<SearchResponse>("search", { q: query }, { ttl: 300 });
     const livePlayers = normalizeSearchPlayers(search.data);
-    const players = mergePlayerProfiles([...livePlayers, ...masterPlayers.map(masterPlayerToProfile)]).slice(0, limit);
+    const players = sortByQueryRelevance(
+      mergePlayerProfiles([...livePlayers, ...masterPlayers.map(masterPlayerToProfile)]),
+      query
+    ).slice(0, limit);
 
     await Promise.allSettled(
       livePlayers.map((player) =>
@@ -66,54 +111,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const message = error instanceof Error ? error.message : "Oyuncu aramasi alinamadi.";
     const status = error instanceof SofaScoreApiError && error.status ? error.status : 500;
-    const [freeLivePlayers, footballServiceResults] = await Promise.all([
-      searchFreeLiveFootball(query),
-      searchFootballService(query)
-    ]);
-
-    if (freeLivePlayers.players.length > 0) {
-      const players = mergePlayerProfiles([
-        ...freeLivePlayers.players,
-        ...masterPlayers.map(masterPlayerToProfile)
-      ]).slice(0, limit);
-
-      await Promise.allSettled(
-        freeLivePlayers.players.map((player) =>
-          writeSupabaseCache("player_pool_cache", {
-            cache_key: `free-live-football:${player.id}`,
-            player_id: player.id,
-            player_name: player.name,
-            team_id: player.team.id,
-            team_name: player.team.name,
-            country_name: player.country,
-            league_name: player.team.tournament,
-            position: player.position,
-            market_value: player.marketValue,
-            payload: player,
-            source: "free-live-football"
-          })
-        )
-      );
-
-      return NextResponse.json(
-        {
-          warning: message,
-          liveStatus: status,
-          providerFallbacks: {
-            freeLiveFootball: {
-              ok: true,
-              count: freeLivePlayers.players.length,
-              source: freeLivePlayers.source
-            },
-            footballservice: footballServiceResults
-          },
-          players,
-          source: "free-live-football",
-          masterCount: masterPlayers.length
-        },
-        { headers: { "Cache-Control": "s-maxage=180, stale-while-revalidate=3600" } }
-      );
-    }
+    const footballServiceResults = await searchFootballService(query);
 
     if (masterPlayers.length > 0) {
       return NextResponse.json(
@@ -288,6 +286,32 @@ function mergePlayerProfiles(players: PlayerProfile[]) {
   });
 }
 
+function sortByQueryRelevance(players: PlayerProfile[], query: string) {
+  const normalizedQuery = normalize(query);
+
+  return [...players].sort((a, b) => {
+    const relevance = queryRelevance(b.name, normalizedQuery) - queryRelevance(a.name, normalizedQuery);
+    if (relevance) return relevance;
+
+    const marketOrder = (b.marketValue || 0) - (a.marketValue || 0);
+    if (marketOrder) return marketOrder;
+
+    return b.metrics.future - a.metrics.future;
+  });
+}
+
+function queryRelevance(name: string, normalizedQuery: string) {
+  const normalizedName = normalize(name);
+  const tokens = normalizedName.split(/\s+/);
+
+  if (normalizedName === normalizedQuery) return 500;
+  if (tokens.includes(normalizedQuery)) return 400;
+  if (tokens.some((token) => token.startsWith(normalizedQuery))) return 300;
+  if (normalizedName.startsWith(normalizedQuery)) return 200;
+  if (normalizedName.includes(normalizedQuery)) return 100;
+  return 0;
+}
+
 function isFootballPlayer(type: string | undefined, entity: SearchEntity | undefined) {
   const resultType = String(type || entity?.type || "").toLocaleLowerCase("tr");
   const hasPlayerShape = Boolean(entity?.position || entity?.dateOfBirthTimestamp || entity?.proposedMarketValueRaw);
@@ -297,6 +321,7 @@ function isFootballPlayer(type: string | undefined, entity: SearchEntity | undef
 function normalize(value: string) {
   return value
     .toLocaleLowerCase("tr")
+    .replace(/ı/g, "i")
     .normalize("NFD")
     .replace(/\p{Diacritic}/gu, "");
 }

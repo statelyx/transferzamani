@@ -198,6 +198,7 @@ export default function Home() {
   }, []);
 
   const gsPlayers = data?.players || [];
+  const firstGsPlayerId = gsPlayers[0]?.id || null;
   const hasConnectedSquad = selectedTeam === "Galatasaray" || (data?.team?.name && selectedTeam === data.team.name);
   const selectedTeamSquad = hasConnectedSquad ? gsPlayers : remoteSquad;
 
@@ -206,10 +207,15 @@ export default function Home() {
       setRemoteSquad([]);
       setSquadError(null);
       setSquadLoading(false);
+      if (hasConnectedSquad && gsPlayers[0]) {
+        setSelectedId(gsPlayers[0].id);
+      }
       return;
     }
 
     const controller = new AbortController();
+    setRemoteSquad([]);
+    setSelectedId(null);
     setSquadLoading(true);
     setSquadError(null);
 
@@ -222,7 +228,9 @@ export default function Home() {
         return body as { players: PlayerProfile[] };
       })
       .then((payload) => {
-        setRemoteSquad(payload.players || []);
+        const nextPlayers = payload.players || [];
+        setRemoteSquad(nextPlayers);
+        setSelectedId(nextPlayers[0]?.id || null);
       })
       .catch((error) => {
         if (error.name === "AbortError") return;
@@ -234,15 +242,11 @@ export default function Home() {
       });
 
     return () => controller.abort();
-  }, [hasConnectedSquad, selectedLeague.id, selectedTeam]);
+  }, [hasConnectedSquad, selectedLeague.id, selectedTeam, firstGsPlayerId]);
 
   const players = useMemo(() => {
-    const map = new Map<number, PlayerProfile>();
-    for (const player of [...gsPlayers, ...remoteSquad]) {
-      map.set(player.id, player);
-    }
-    return Array.from(map.values());
-  }, [gsPlayers, remoteSquad]);
+    return selectedTeamSquad;
+  }, [selectedTeamSquad]);
 
   useEffect(() => {
     if (!selectedId && players.length > 0) {
