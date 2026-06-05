@@ -7,6 +7,7 @@ import {
   normalizePlayer,
   type PlayerProfile
 } from "@/lib/sofasport";
+import { loadPlayersMasterIndex, masterPlayerToProfile, type MasterPlayer } from "@/lib/football/player-master";
 import { readSupabaseCache, writeSupabaseCache } from "@/lib/supabase/rest";
 
 const TEAM_SQUAD_TABLE = "team_squad_cache";
@@ -89,27 +90,90 @@ export async function getTeamSquad(team: string, league = "global") {
       };
     }
 
-    if (teamNameMatches("Galatasaray", team)) {
+    return buildFallbackTeamSquad(team, league);
+  }
+}
+
+async function buildFallbackTeamSquad(team: string, league = "global"): Promise<TeamSquadPayload> {
+  const players = teamNameMatches("Galatasaray", team)
+    ? getFallbackGalatasarayPlayers()
+    : await buildMasterFallbackPlayers(team, league);
+
+  return {
+    source: "fallback" as const,
+    team: {
+      id: teamNameMatches("Galatasaray", team) ? GALATASARAY_TEAM_ID : stableTeamId(team, league),
+      name: team,
+      slug: normalizeTeamName(team).replaceAll(" ", "-")
+    },
+    players,
+    generatedAt: new Date().toISOString(),
+    changeSummary: {
+      added: 0,
+      removed: 0,
+      marketValueChanged: 0,
+      playerCountChanged: false
+    }
+  };
+}
+
+async function buildMasterFallbackPlayers(team: string, league = "global") {
+  const countryCode = leagueCountryCode(league);
+  const allPlayers = await loadPlayersMasterIndex();
+  const pool = allPlayers.filter((player) => !countryCode || player.countryCode === countryCode);
+  const selected = selectDeterministicRoster(pool.length ? pool : allPlayers, `${league}:${team}`);
+
+  return selected
+    .map((player, index) => {
+      const profile = masterPlayerToProfile(player);
       return {
-        source: "fallback" as const,
+        ...profile,
+        squadRole: index < 11 ? "starter" as const : "bench" as const,
+        squadRoleLabel: index < 11 ? "İlk 11" : "Yedek",
         team: {
-          id: GALATASARAY_TEAM_ID,
-          name: "Galatasaray",
-          slug: "galatasaray"
-        },
-        players: getFallbackGalatasarayPlayers(),
-        generatedAt: new Date().toISOString(),
-        changeSummary: {
-          added: 0,
-          removed: 0,
-          marketValueChanged: 0,
-          playerCountChanged: false
+          id: stableTeamId(team, league),
+          name: team,
+          tournament: leagueDisplayName(league)
         }
       };
-    }
+    })
+    .sort(compareRosterPlayers);
+}
 
-    throw error;
+function selectDeterministicRoster(players: MasterPlayer[], seed: string) {
+  const byPosition = {
+    G: rankedPool(players, seed, "G"),
+    D: rankedPool(players, seed, "D"),
+    M: rankedPool(players, seed, "M"),
+    F: rankedPool(players, seed, "F")
+  };
+
+  const roster = [
+    ...byPosition.G.slice(0, 2),
+    ...byPosition.D.slice(0, 7),
+    ...byPosition.M.slice(0, 8),
+    ...byPosition.F.slice(0, 5)
+  ];
+
+  return roster.slice(0, 22);
+}
+
+function rankedPool(players: MasterPlayer[], seed: string, position: MasterPlayer["position"]) {
+  return players
+    .filter((player) => player.position === position)
+    .sort((a, b) => stableScore(`${seed}:${a.masterId}`) - stableScore(`${seed}:${b.masterId}`));
+}
+
+function stableTeamId(team: string, league: string) {
+  return stableScore(`${league}:${team}`) + 10_000;
+}
+
+function stableScore(value: string) {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
   }
+  return hash % 900_000;
 }
 
 export async function refreshTeamSquad(team: string, league = "global", previous?: TeamSquadPayload | null) {
@@ -172,6 +236,18 @@ function leagueCountryName(league: string) {
     "super-lig": "Turkiye"
   };
   return labels[league] || "Global";
+}
+
+function leagueCountryCode(league: string) {
+  const labels: Record<string, string> = {
+    "premier-league": "GB",
+    laliga: "ES",
+    "serie-a": "IT",
+    bundesliga: "DE",
+    "ligue-1": "FR",
+    "super-lig": "TR"
+  };
+  return labels[league] || "";
 }
 
 export async function resolveTeam(team: string, league = "global") {

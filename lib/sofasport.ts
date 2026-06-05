@@ -1053,11 +1053,11 @@ function positionOrder(position: string) {
 }
 
 export function compareRosterPlayers(a: PlayerProfile, b: PlayerProfile) {
-  const position = positionOrder(a.position) - positionOrder(b.position);
-  if (position) return position;
-
   const roleOrder = (a.squadRole === "starter" ? 0 : 1) - (b.squadRole === "starter" ? 0 : 1);
   if (roleOrder) return roleOrder;
+
+  const position = positionOrder(a.position) - positionOrder(b.position);
+  if (position) return position;
 
   return Number(a.jerseyNumber || 999) - Number(b.jerseyNumber || 999);
 }
