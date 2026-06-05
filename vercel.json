@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/update-twitter-news",
-      "schedule": "*/30 * * * *"
+      "schedule": "30 0 * * *"
     }
   ]
 }
