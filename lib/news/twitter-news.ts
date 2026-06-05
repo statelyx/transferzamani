@@ -31,6 +31,12 @@ type RawTweet = {
   text?: string;
   full_text?: string;
   media_url?: string;
+  profile_image_url_https?: string;
+  profile_image_url?: string;
+  user?: {
+    profile_image_url_https?: string;
+    profile_image_url?: string;
+  };
   media?: Array<{ media_url_https?: string; media_url?: string; url?: string }>;
   entities?: {
     media?: Array<{ media_url_https?: string; media_url?: string; url?: string }>;
@@ -52,6 +58,19 @@ const TRACKED_ACCOUNTS = [
   "OptaCan"
 ];
 
+export const TURKISH_NEWS_ACCOUNTS = [
+  "_samiyenhaber",
+  "ertansuzgun",
+  "xco1905",
+  "altunterimos1",
+  "AliNaciKucuk",
+  "yagosabuncuoglu",
+  "SuleymanRodop",
+  "saruh5n",
+  "emreekaaplan",
+  "OptaCan"
+];
+
 export async function listNews(limit = 24) {
   const rows = await listSupabaseRows<{ payload: NewsCard }>(
     "news_cache",
@@ -63,7 +82,7 @@ export async function listNews(limit = 24) {
   return rows.map((row) => row.payload).filter(Boolean);
 }
 
-export async function refreshTwitterNews(options: { accounts?: string[]; limitPerAccount?: number } = {}) {
+export async function refreshTwitterNews(options: { accounts?: string[]; limitPerAccount?: number; force?: boolean } = {}) {
   const accounts = options.accounts || TRACKED_ACCOUNTS;
   const limitPerAccount = options.limitPerAccount || 12;
   const news: NewsCard[] = [];
@@ -74,7 +93,7 @@ export async function refreshTwitterNews(options: { accounts?: string[]; limitPe
       const result = await twitterApiGet<TimelineResponse>(
         "timeline",
         { screenname: account, count: limitPerAccount },
-        { force: true }
+        { force: options.force ?? false }
       );
       const tweets = [...(result.data.pinned ? [result.data.pinned] : []), ...(result.data.timeline || [])];
 
@@ -137,7 +156,7 @@ function normalizeTweet(tweet: RawTweet, fallbackAccount: string): NewsCard | nu
     sourceName: tweet.name || sourceAccount,
     sourceUrl: `https://x.com/${sourceAccount}/status/${tweetId}`,
     publishedAt,
-    imageUrl: firstImage(tweet)
+    imageUrl: firstImage(tweet, sourceAccount)
   };
 }
 
@@ -162,7 +181,7 @@ function inferLeague(text: string) {
 function buildTurkishTitle(text: string, category: NewsCategory) {
   const translated = translateFootballText(text);
   const firstSentence = translated.split(/[.!?]\s/)[0] || translated;
-  const prefix = category === "transfer" ? "Transfer" : category === "istatistik" ? "Istatistik" : "Gundem";
+  const prefix = category === "transfer" ? "Transfer" : category === "istatistik" ? "İstatistik" : "Gündem";
   return `${prefix}: ${firstSentence.slice(0, 96)}`;
 }
 
@@ -190,13 +209,17 @@ function parseTwitterDate(value?: string) {
   return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
 }
 
-function firstImage(tweet: RawTweet) {
+function firstImage(tweet: RawTweet, sourceAccount: string) {
   return (
     tweet.media_url ||
     tweet.media?.[0]?.media_url_https ||
     tweet.media?.[0]?.media_url ||
     tweet.entities?.media?.[0]?.media_url_https ||
     tweet.entities?.media?.[0]?.media_url ||
-    null
+    tweet.user?.profile_image_url_https ||
+    tweet.user?.profile_image_url ||
+    tweet.profile_image_url_https ||
+    tweet.profile_image_url ||
+    `https://unavatar.io/x/${sourceAccount}`
   );
 }

@@ -12,6 +12,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized cron request." }, { status: 401 });
   }
 
-  const result = await refreshTwitterNews({ limitPerAccount: 8 });
+  const result = await refreshTwitterNews({ limitPerAccount: 8, force: true });
   return NextResponse.json(result);
 }
