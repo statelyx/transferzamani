@@ -563,6 +563,12 @@ export function normalizePlayer(
   };
 }
 
+export function getFallbackGalatasarayPlayers(): PlayerProfile[] {
+  return fallbackPlayers()
+    .map((player, index) => normalizePlayer(player, index < 11 ? "starter" : "bench"))
+    .sort(compareRosterPlayers);
+}
+
 function normalizeEvent(event: RawEvent | null): TeamEvent | null {
   if (!event) return null;
 

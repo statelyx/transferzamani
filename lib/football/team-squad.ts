@@ -1,6 +1,12 @@
 import { sofaScoreGet } from "@/lib/sofascore/client";
 import type { SofaScorePlayer, SofaScoreSquadResponse } from "@/lib/sofascore/types";
-import { compareRosterPlayers, normalizePlayer, type PlayerProfile } from "@/lib/sofasport";
+import {
+  GALATASARAY_TEAM_ID,
+  compareRosterPlayers,
+  getFallbackGalatasarayPlayers,
+  normalizePlayer,
+  type PlayerProfile
+} from "@/lib/sofasport";
 import { readSupabaseCache, writeSupabaseCache } from "@/lib/supabase/rest";
 
 const TEAM_SQUAD_TABLE = "team_squad_cache";
@@ -42,7 +48,7 @@ export type SquadChangeSummary = {
 };
 
 export type TeamSquadPayload = {
-  source: "supabase" | "sofascore";
+  source: "supabase" | "sofascore" | "fallback";
   team: {
     id: number;
     name: string;
@@ -80,6 +86,25 @@ export async function getTeamSquad(team: string, league = "global") {
         source: "supabase" as const,
         generatedAt: staleCached.generatedAt,
         changeSummary: staleCached.changeSummary
+      };
+    }
+
+    if (teamNameMatches("Galatasaray", team)) {
+      return {
+        source: "fallback" as const,
+        team: {
+          id: GALATASARAY_TEAM_ID,
+          name: "Galatasaray",
+          slug: "galatasaray"
+        },
+        players: getFallbackGalatasarayPlayers(),
+        generatedAt: new Date().toISOString(),
+        changeSummary: {
+          added: 0,
+          removed: 0,
+          marketValueChanged: 0,
+          playerCountChanged: false
+        }
       };
     }
 
