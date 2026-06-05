@@ -66,12 +66,24 @@ export function teamSquadCacheKey(team: string, league = "global") {
   return `${league}:${team}`.toLocaleLowerCase("tr");
 }
 
+const TRUSTED_SQUAD_SOURCES = new Set(["fotmob", "sofascore"]);
+
+function isTrustedSquad(cached: TeamSquadPayload | null, team: string) {
+  return Boolean(
+    cached &&
+      TRUSTED_SQUAD_SOURCES.has(cached.source) &&
+      cached.players.length > 0 &&
+      cached.players.length <= 45 &&
+      teamNameMatches(cached.team.name, team)
+  );
+}
+
 export async function getTeamSquad(team: string, league = "global") {
   const cacheKey = teamSquadCacheKey(team, league);
   const cached = await readSupabaseCache<TeamSquadPayload>(TEAM_SQUAD_TABLE, cacheKey);
 
-  if (cached && cached.source !== "fallback" && cached.players.length <= 45 && teamNameMatches(cached.team.name, team)) {
-    return { ...cached, source: "supabase" as const };
+  if (isTrustedSquad(cached, team)) {
+    return { ...(cached as TeamSquadPayload), source: "supabase" as const };
   }
 
   try {
@@ -89,12 +101,10 @@ export async function getTeamSquad(team: string, league = "global") {
         STALE_TEAM_SQUAD_TTL_MS
       );
 
-      if (staleCached && staleCached.source !== "fallback" && staleCached.players.length <= 45 && teamNameMatches(staleCached.team.name, team)) {
+      if (isTrustedSquad(staleCached, team)) {
         return {
-          ...staleCached,
-          source: "supabase" as const,
-          generatedAt: staleCached.generatedAt,
-          changeSummary: staleCached.changeSummary
+          ...(staleCached as TeamSquadPayload),
+          source: "supabase" as const
         };
       }
 

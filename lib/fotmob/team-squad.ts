@@ -1,6 +1,7 @@
 import { fotMobGet } from "@/lib/fotmob/client";
 import { compareRosterPlayers, type PlayerProfile } from "@/lib/sofasport";
 import { estimateMarketValue, formatMarketValueAll } from "@/lib/football/market-value";
+import { FOTMOB_LEAGUE_LABELS as LEAGUE_LABELS, resolveFotMobTeamFromLeague } from "@/lib/fotmob/league-teams";
 
 type FotMobSquadGroup = {
   title?: string;
@@ -36,9 +37,7 @@ type FotMobSquadResponse = {
   squad?: FotMobSquadGroup[];
 };
 
-const FOTMOB_LEAGUE_LABELS: Record<string, string> = {
-  "super-lig": "Super Lig"
-};
+const FOTMOB_LEAGUE_LABELS: Record<string, string> = LEAGUE_LABELS;
 
 const FOTMOB_TEAM_IDS: Record<string, number> = {
   alanyaspor: 4678,
@@ -67,7 +66,9 @@ const FOTMOB_TEAM_IDS: Record<string, number> = {
 };
 
 export async function getFotMobTeamSquad(team: string, league = "super-lig") {
-  const teamId = resolveFotMobTeamId(team);
+  // 1. sira: lig tablosundan dinamik takim ID cozumleme (tum ligler icin gercek kadro).
+  const leagueTeam = await resolveFotMobTeamFromLeague(team, league).catch(() => null);
+  const teamId = leagueTeam?.id || resolveFotMobTeamId(team);
   if (!teamId) throw new Error(`${team} icin FotMob takim ID bulunamadi.`);
 
   const result = await fotMobGet<FotMobSquadResponse>(`api/v1/teams/${teamId}/squad`, {}, { ttl: 86_400 });
@@ -81,7 +82,7 @@ export async function getFotMobTeamSquad(team: string, league = "super-lig") {
     source: "fotmob" as const,
     team: {
       id: result.data.teamId || teamId,
-      name: result.data.teamName || team,
+      name: result.data.teamName || leagueTeam?.name || team,
       slug: normalizeKey(result.data.teamName || team).replaceAll(" ", "-")
     },
     players,
