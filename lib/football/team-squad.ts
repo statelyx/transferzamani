@@ -1,5 +1,6 @@
 import { sofaScoreGet } from "@/lib/sofascore/client";
 import type { SofaScorePlayer, SofaScoreSquadResponse } from "@/lib/sofascore/types";
+import { getFotMobTeamSquad } from "@/lib/fotmob/team-squad";
 import {
   GALATASARAY_TEAM_ID,
   compareRosterPlayers,
@@ -49,7 +50,7 @@ export type SquadChangeSummary = {
 };
 
 export type TeamSquadPayload = {
-  source: "supabase" | "sofascore" | "fallback";
+  source: "supabase" | "sofascore" | "fotmob" | "fallback";
   team: {
     id: number;
     name: string;
@@ -68,30 +69,48 @@ export async function getTeamSquad(team: string, league = "global") {
   const cacheKey = teamSquadCacheKey(team, league);
   const cached = await readSupabaseCache<TeamSquadPayload>(TEAM_SQUAD_TABLE, cacheKey);
 
-  if (cached && teamNameMatches(cached.team.name, team)) {
+  if (cached && cached.source !== "fallback" && teamNameMatches(cached.team.name, team)) {
     return { ...cached, source: "supabase" as const };
   }
 
   try {
-    return await refreshTeamSquad(team, league, cached);
+    return await refreshTeamSquadFromFotMob(team, league, cached);
   } catch (error) {
-    const staleCached = await readSupabaseCache<TeamSquadPayload>(
-      TEAM_SQUAD_TABLE,
-      cacheKey,
-      STALE_TEAM_SQUAD_TTL_MS
-    );
+    try {
+      return await refreshTeamSquad(team, league, cached);
+    } catch {
+      const staleCached = await readSupabaseCache<TeamSquadPayload>(
+        TEAM_SQUAD_TABLE,
+        cacheKey,
+        STALE_TEAM_SQUAD_TTL_MS
+      );
 
-    if (staleCached && teamNameMatches(staleCached.team.name, team)) {
-      return {
-        ...staleCached,
-        source: "supabase" as const,
-        generatedAt: staleCached.generatedAt,
-        changeSummary: staleCached.changeSummary
-      };
+      if (staleCached && staleCached.source !== "fallback" && teamNameMatches(staleCached.team.name, team)) {
+        return {
+          ...staleCached,
+          source: "supabase" as const,
+          generatedAt: staleCached.generatedAt,
+          changeSummary: staleCached.changeSummary
+        };
+      }
+
+      console.warn("FotMob/SofaScore squad refresh failed, using fallback:", error);
+      return buildFallbackTeamSquad(team, league);
     }
-
-    return buildFallbackTeamSquad(team, league);
   }
+}
+
+async function refreshTeamSquadFromFotMob(team: string, league = "global", previous?: TeamSquadPayload | null) {
+  const payload = await getFotMobTeamSquad(team, league);
+  const changeSummary = buildSquadChangeSummary(previous?.players || [], payload.players);
+  const nextPayload: TeamSquadPayload = {
+    ...payload,
+    changeSummary
+  };
+
+  await writeTeamSquadCache(team, league, nextPayload, payload.team.id, "fotmob");
+
+  return nextPayload;
 }
 
 async function buildFallbackTeamSquad(team: string, league = "global"): Promise<TeamSquadPayload> {
@@ -197,21 +216,31 @@ export async function refreshTeamSquad(team: string, league = "global", previous
     changeSummary
   };
 
+  await writeTeamSquadCache(team, league, payload, resolved.id, "sofascore");
+
+  return payload;
+}
+
+async function writeTeamSquadCache(
+  team: string,
+  league: string,
+  payload: TeamSquadPayload,
+  teamId: number,
+  source: TeamSquadPayload["source"]
+) {
   await writeSupabaseCache(TEAM_SQUAD_TABLE, {
     cache_key: teamSquadCacheKey(team, league),
-    team_name: resolved.name,
+    team_name: payload.team.name,
     country_name: leagueCountryName(league),
     league_name: leagueDisplayName(league),
     league_id: league,
-    team_id: resolved.id,
+    team_id: teamId,
     payload,
-    player_count: players.length,
-    last_change_summary: changeSummary,
+    player_count: payload.players.length,
+    last_change_summary: payload.changeSummary,
     last_refreshed_at: payload.generatedAt,
-    source: "sofascore"
+    source
   });
-
-  return payload;
 }
 
 function leagueDisplayName(league: string) {

@@ -3,6 +3,7 @@ import path from "node:path";
 import { footballServiceGet } from "@/lib/providers/footballservice";
 import { sofaScoreGet } from "@/lib/sofascore/client";
 import { getLiveTransferRumors } from "@/lib/football/transfers";
+import { getFotMobTeamSquad } from "@/lib/fotmob/team-squad";
 
 export const GALATASARAY_TEAM_ID = 3061;
 
@@ -257,12 +258,12 @@ async function sofaFetch<T>(path: string): Promise<T> {
 }
 
 export async function getGalatasarayPayload(): Promise<GalatasarayPayload> {
-  if (memoryCache && Date.now() - memoryCache.timestamp < CACHE_TTL_MS) {
+  if (memoryCache && memoryCache.payload.status.mode === "live" && Date.now() - memoryCache.timestamp < CACHE_TTL_MS) {
     return memoryCache.payload;
   }
 
   const freshFileCache = await readCacheFile(CACHE_TTL_MS);
-  if (freshFileCache) {
+  if (freshFileCache?.payload.status.mode === "live") {
     memoryCache = freshFileCache;
     return freshFileCache.payload;
   }
@@ -273,7 +274,7 @@ export async function getGalatasarayPayload(): Promise<GalatasarayPayload> {
     await writeCacheFile(memoryCache);
     return payload;
   } catch (error) {
-    if (memoryCache) {
+    if (memoryCache?.payload.status.mode === "live") {
       return {
         ...memoryCache.payload,
         status: {
@@ -285,7 +286,7 @@ export async function getGalatasarayPayload(): Promise<GalatasarayPayload> {
     }
 
     const staleFileCache = await readCacheFile(STALE_CACHE_TTL_MS);
-    if (staleFileCache) {
+    if (staleFileCache?.payload.status.mode === "live") {
       const payload = {
         ...staleFileCache.payload,
         status: {
@@ -351,6 +352,54 @@ function cacheFilePath() {
 }
 
 async function loadLiveGalatasarayPayload(): Promise<GalatasarayPayload> {
+  try {
+    return await loadFotMobGalatasarayPayload();
+  } catch (error) {
+    console.warn("FotMob Galatasaray verisi alinamadi, SofaScore deneniyor:", error);
+  }
+
+  return loadSofaScoreGalatasarayPayload();
+}
+
+async function loadFotMobGalatasarayPayload(): Promise<GalatasarayPayload> {
+  const squad = await getFotMobTeamSquad("Galatasaray", "super-lig");
+  const players = squad.players;
+  const rumors = await buildRumorsForPlayers(players);
+
+  return {
+    generatedAt: new Date().toISOString(),
+    status: {
+      mode: "live",
+      message: "Canli FotMob kadro ve transfer verisi gosteriliyor."
+    },
+    team: {
+      id: squad.team.id,
+      name: squad.team.name,
+      tournament: "Super Lig",
+      uniqueTournamentId: 71,
+      colors: {
+        primary: "#ff9900",
+        secondary: "#ff0000",
+        text: "#111111"
+      },
+      playerCount: players.length,
+      foreignCount: players.filter((player) => player.countryCode && player.countryCode !== "TUR").length,
+      nationalCount: players.filter((player) => player.countryCode === "TUR").length
+    },
+    players,
+    events: {
+      previous: null,
+      next: null
+    },
+    rumors,
+    endpoints: {
+      players: `fotmob/api/v1/teams/${squad.team.id}/squad`,
+      nearEvents: `fotmob/api/v1/teams/${squad.team.id}`
+    }
+  };
+}
+
+async function loadSofaScoreGalatasarayPayload(): Promise<GalatasarayPayload> {
   const [playersResult, nearEventsResult] = await Promise.all([
     sofaScoreGet<{
       players?: Array<{ player: RawPlayer }>;
@@ -438,6 +487,25 @@ async function getEventLineups(eventId: number) {
   } catch {
     return null;
   }
+}
+
+async function buildRumorsForPlayers(players: PlayerProfile[]) {
+  let rumors: Rumor[] = [];
+
+  try {
+    const newsData = await getLiveTransferRumors();
+    const newsRumors = newsData?.news ? mapFotMobNewsToRumors(newsData.news, players) : [];
+    const transferRumors = newsData?.transfers ? newsData.transfers.map((t, idx) => mapFotMobTransferToRumor(t, idx, players)) : [];
+    rumors = [...newsRumors, ...transferRumors];
+  } catch (err) {
+    console.warn("FotMob haber akisi alinamadi, demo verilere donuluyor:", err);
+  }
+
+  if (rumors.length === 0) {
+    rumors = buildDemoRumors(players);
+  }
+
+  return rumors;
 }
 
 function buildLineupRoleMap(lineups: RawLineups | null) {
