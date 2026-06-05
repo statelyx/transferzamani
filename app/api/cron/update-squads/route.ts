@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { refreshTeamSquad, type TeamSquadPayload } from "@/lib/football/team-squad";
+import { refreshTeamSquadWithProviders, type TeamSquadPayload } from "@/lib/football/team-squad";
 import { listSupabaseCacheRows } from "@/lib/supabase/rest";
 import { refreshLiveTransferRumors } from "@/lib/football/transfers";
 
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-      const payload = await refreshTeamSquad(team, league, row.payload);
+      const payload = await refreshTeamSquadWithProviders(team, league, row.payload);
       results.push({
         cacheKey: row.cache_key,
         team: payload.team.name,

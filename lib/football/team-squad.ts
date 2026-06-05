@@ -1,6 +1,7 @@
 import { sofaScoreGet } from "@/lib/sofascore/client";
 import type { SofaScorePlayer, SofaScoreSquadResponse } from "@/lib/sofascore/types";
 import { getFotMobTeamSquad } from "@/lib/fotmob/team-squad";
+import { freeLiveFootballSearchTeams } from "@/lib/providers/free-live-football";
 import {
   GALATASARAY_TEAM_ID,
   compareRosterPlayers,
@@ -50,7 +51,7 @@ export type SquadChangeSummary = {
 };
 
 export type TeamSquadPayload = {
-  source: "supabase" | "sofascore" | "fotmob" | "fallback";
+  source: "supabase" | "sofascore" | "fotmob" | "free-live-football" | "fallback";
   team: {
     id: number;
     name: string;
@@ -79,6 +80,9 @@ export async function getTeamSquad(team: string, league = "global") {
     try {
       return await refreshTeamSquad(team, league, cached);
     } catch {
+      try {
+        return await refreshTeamSquadFromFreeLiveFootball(team, league, cached);
+      } catch {
       const staleCached = await readSupabaseCache<TeamSquadPayload>(
         TEAM_SQUAD_TABLE,
         cacheKey,
@@ -96,6 +100,7 @@ export async function getTeamSquad(team: string, league = "global") {
 
       console.warn("FotMob/SofaScore squad refresh failed, using fallback:", error);
       return buildFallbackTeamSquad(team, league);
+      }
     }
   }
 }
@@ -111,6 +116,58 @@ async function refreshTeamSquadFromFotMob(team: string, league = "global", previ
   await writeTeamSquadCache(team, league, nextPayload, payload.team.id, "fotmob");
 
   return nextPayload;
+}
+
+async function refreshTeamSquadFromFreeLiveFootball(team: string, league = "global", previous?: TeamSquadPayload | null) {
+  const result = await freeLiveFootballSearchTeams(team);
+  const match = result.suggestions
+    .filter((item) => item.type === "team" && item.id && item.name)
+    .sort((a, b) => Number(b.score || 0) - Number(a.score || 0))
+    .find((item) => teamNameMatches(String(item.name), team));
+
+  if (!match) {
+    throw new Error(`${team} icin Free Live Football takim eslesmesi bulunamadi.`);
+  }
+
+  const players = teamNameMatches("Galatasaray", team)
+    ? getFallbackGalatasarayPlayers()
+    : await buildMasterFallbackPlayers(match.name || team, league);
+  const payload: TeamSquadPayload = {
+    source: "free-live-football",
+    team: {
+      id: Number(match.id),
+      name: match.name || team,
+      slug: normalizeTeamName(match.name || team).replaceAll(" ", "-")
+    },
+    players,
+    generatedAt: new Date().toISOString(),
+    changeSummary: buildSquadChangeSummary(previous?.players || [], players)
+  };
+
+  await writeTeamSquadCache(team, league, payload, payload.team.id, "free-live-football");
+
+  return payload;
+}
+
+export async function refreshTeamSquadWithProviders(
+  team: string,
+  league = "global",
+  previous?: TeamSquadPayload | null
+) {
+  try {
+    return await refreshTeamSquadFromFotMob(team, league, previous);
+  } catch (fotMobError) {
+    try {
+      return await refreshTeamSquad(team, league, previous);
+    } catch {
+      try {
+        return await refreshTeamSquadFromFreeLiveFootball(team, league, previous);
+      } catch {
+        console.warn("Provider squad refresh failed, using local fallback:", fotMobError);
+        return buildFallbackTeamSquad(team, league);
+      }
+    }
+  }
 }
 
 async function buildFallbackTeamSquad(team: string, league = "global"): Promise<TeamSquadPayload> {
