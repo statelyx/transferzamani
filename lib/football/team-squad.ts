@@ -70,7 +70,7 @@ export async function getTeamSquad(team: string, league = "global") {
   const cacheKey = teamSquadCacheKey(team, league);
   const cached = await readSupabaseCache<TeamSquadPayload>(TEAM_SQUAD_TABLE, cacheKey);
 
-  if (cached && cached.source !== "fallback" && teamNameMatches(cached.team.name, team)) {
+  if (cached && cached.source !== "fallback" && cached.players.length <= 45 && teamNameMatches(cached.team.name, team)) {
     return { ...cached, source: "supabase" as const };
   }
 
@@ -89,7 +89,7 @@ export async function getTeamSquad(team: string, league = "global") {
         STALE_TEAM_SQUAD_TTL_MS
       );
 
-      if (staleCached && staleCached.source !== "fallback" && teamNameMatches(staleCached.team.name, team)) {
+      if (staleCached && staleCached.source !== "fallback" && staleCached.players.length <= 45 && teamNameMatches(staleCached.team.name, team)) {
         return {
           ...staleCached,
           source: "supabase" as const,

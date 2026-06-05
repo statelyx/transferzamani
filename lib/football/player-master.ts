@@ -111,7 +111,7 @@ export function masterPlayerToProfile(player: MasterPlayer): PlayerProfile {
     contractUntil: null,
     contractMonthsRemaining: null,
     contractRisk: "Orta",
-    imageUrl: `/api/image/player/${numericId}`,
+    imageUrl: `/api/image/player-search/${encodeURIComponent(player.name)}`,
     team: {
       id: 0,
       name: "Takim API ile eslestirilecek",

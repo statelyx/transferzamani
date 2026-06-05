@@ -179,7 +179,6 @@ export default function Home() {
       setSelectedId((current) => current || payload.players[0]?.id || null);
       setCompareA((current) => current || payload.players[0]?.id || null);
       setCompareB((current) => current || payload.players[1]?.id || null);
-      setLineup((current) => seedLineup(current, payload.players));
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Bilinmeyen hata.");
     } finally {
@@ -945,11 +944,26 @@ function LineupBuilder({
   const selectedRoleKey = tacticalRoleKey(selectedSlotMeta.label);
   const selectedRolePresets = PLAYER_ROLE_PRESETS[selectedRoleKey] || [];
   const allPoolPlayers = useMemo(
-    () => mergePlayers([...players, ...poolPlayers, ...remoteSearchPlayers]),
-    [players, poolPlayers, remoteSearchPlayers]
+    () => mergePlayers([...poolPlayers, ...remoteSearchPlayers]),
+    [poolPlayers, remoteSearchPlayers]
   );
   const selectedSlotPlayer = allPoolPlayers.find((player) => player.id === lineup[selectedSlot]);
   const normalizedLineupQuery = normalize(lineupQuery);
+  const activeLineupPlayers = useMemo(
+    () =>
+      Object.values(lineup)
+        .map((id) => allPoolPlayers.find((player) => player.id === id))
+        .filter(Boolean) as PlayerProfile[],
+    [allPoolPlayers, lineup]
+  );
+  const activeSquadValue = activeLineupPlayers.reduce((sum, player) => sum + (player.marketValue || 0), 0);
+  const activeBudgetDelta = budget - activeSquadValue;
+  const activeAvgAge = activeLineupPlayers.length
+    ? activeLineupPlayers.reduce((sum, player) => sum + (player.age || 0), 0) / activeLineupPlayers.length
+    : 0;
+  const activeAvgRating = activeLineupPlayers.length
+    ? activeLineupPlayers.reduce((sum, player) => sum + player.metrics.future, 0) / activeLineupPlayers.length
+    : 0;
 
   useEffect(() => {
     let active = true;
@@ -1223,26 +1237,26 @@ function LineupBuilder({
           <div className="panel-title">
             <div>
               <span className="kicker">KADRO DEGERI</span>
-              <h2>{formatMoney(squadValue)}</h2>
+              <h2>{formatMoney(activeSquadValue)}</h2>
             </div>
             <CircleDollarSign size={20} />
           </div>
           <div className="budget-track">
-            <span style={{ width: `${Math.min((squadValue / budget) * 100, 100)}%` }} />
+            <span style={{ width: `${Math.min((activeSquadValue / budget) * 100, 100)}%` }} />
           </div>
-          <p className={budgetDelta >= 0 ? "budget-ok" : "budget-warn"}>
-            {budgetDelta >= 0 ? `${formatMoney(budgetDelta)} bosluk var` : `${formatMoney(Math.abs(budgetDelta))} butce asimi`}
+          <p className={activeBudgetDelta >= 0 ? "budget-ok" : "budget-warn"}>
+            {activeBudgetDelta >= 0 ? `${formatMoney(activeBudgetDelta)} bosluk var` : `${formatMoney(Math.abs(activeBudgetDelta))} butce asimi`}
           </p>
-          {budgetDelta < 0 ? (
+          {activeBudgetDelta < 0 ? (
             <div className="budget-alert">
               Limit asildi. Kadroyu kaydetmeden once daha dusuk piyasa degerli bir alternatif secin veya butceyi yukselterek devam edin.
             </div>
           ) : null}
         </div>
         <div className="squad-stats">
-          <MiniStat label="ORT. YAS" value={avgAge ? avgAge.toFixed(1) : "-"} sub="Ilk 11" />
-          <MiniStat label="ORT. SKOR" value={avgRating ? avgRating.toFixed(1) : "-"} sub="Potansiyel" />
-          <MiniStat label="POTANSIYEL" value={`${Math.round(avgRating || 0)}/100`} sub="Takim tavan" wide />
+          <MiniStat label="ORT. YAS" value={activeAvgAge ? activeAvgAge.toFixed(1) : "-"} sub="Ilk 11" />
+          <MiniStat label="ORT. SKOR" value={activeAvgRating ? activeAvgRating.toFixed(1) : "-"} sub="Potansiyel" />
+          <MiniStat label="POTANSIYEL" value={`${Math.round(activeAvgRating || 0)}/100`} sub="Takim tavan" wide />
         </div>
         <div className="glass-panel">
           <div className="ai-head">
@@ -1389,6 +1403,7 @@ function LineupSlot({
   return (
     <div
       className={`lineup-slot slot-${slot.id} ${selected ? "selected" : ""}`}
+      style={{ top: `${slot.top}%`, left: `${slot.left}%` }}
       onDragOver={(event) => {
         event.preventDefault();
         event.dataTransfer.dropEffect = "move";
