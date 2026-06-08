@@ -10,7 +10,7 @@ Production deployment needs these project environment variables:
 RAPIDAPI_KEY=<your RapidAPI app key>
 RAPIDAPI_HOST=<optional legacy RapidAPI host>
 SOFASCORE_RAPIDAPI_HOST=sofascore.p.rapidapi.com
-FREE_LIVE_FOOTBALL_RAPIDAPI_HOST=free-api-live-football-data.p.rapidapi.com
+FREE_LIVE_FOOTBALL_RAPIDAPI_HOST=free-api-live-football-data-cheaper-version.p.rapidapi.com
 FOTMOB_RAPIDAPI_HOST=fotmob-api.p.rapidapi.com
 FOOTBALLSERVICE_RAPIDAPI_HOST=footballservice1.p.rapidapi.com
 TWITTER_API_RAPIDAPI_HOST=twitter-api45.p.rapidapi.com

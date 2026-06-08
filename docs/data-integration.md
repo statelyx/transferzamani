@@ -7,7 +7,7 @@ Tam takim, kadro, oyuncu fotografi, lig fiksturu ve transfer/haber akisi icin ca
 - `RAPIDAPI_KEY`: RapidAPI uzerindeki futbol/SofaSport anahtari.
 - `RAPIDAPI_KEY`: RapidAPI hesabindaki ortak anahtar. RapidAPI'de farkli API'ler icin genelde ayni kalir.
 - `RAPIDAPI_HOST`: Baska RapidAPI entegrasyonlari icin kullanilan eski/genel host. SofaScore icin zorunlu degil.
-- `FREE_LIVE_FOOTBALL_RAPIDAPI_HOST`: Birinci futbol veri kaynagi. Bu proje icin: `free-api-live-football-data.p.rapidapi.com`.
+- `FREE_LIVE_FOOTBALL_RAPIDAPI_HOST`: Birinci futbol veri kaynagi. Bu proje icin: `free-api-live-football-data-cheaper-version.p.rapidapi.com`.
 - `FOTMOB_RAPIDAPI_HOST`: Ikinci futbol veri kaynagi ve zengin kadro/gorsel fallback'i. Bu proje icin: `fotmob-api.p.rapidapi.com`.
 - `SOFASCORE_RAPIDAPI_HOST`: SofaScore RapidAPI host degeri. Bu proje icin: `sofascore.p.rapidapi.com`.
 - `FOOTBALLSERVICE_RAPIDAPI_HOST`: FootballService RapidAPI host degeri. Bu proje icin: `footballservice1.p.rapidapi.com`.
