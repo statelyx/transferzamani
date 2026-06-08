@@ -54,7 +54,7 @@ async function fetchSiteSource(source: SiteSource): Promise<NewsCard[]> {
   const response = await fetch(source.url, {
     headers: {
       "Accept": "application/rss+xml, application/xml, text/xml",
-      "User-Agent": "STAT11/1.0 Turkish football news reader"
+      "User-Agent": "TransferZamani/1.0 Turkish football news reader"
     },
     cache: "no-store",
     signal: AbortSignal.timeout(8000)

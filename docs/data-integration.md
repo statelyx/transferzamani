@@ -1,4 +1,4 @@
-# STAT11 veri entegrasyonu
+# Transfer Zamanı veri entegrasyonu
 
 Tam takim, kadro, oyuncu fotografi, lig fiksturu ve transfer/haber akisi icin canli API verisini Supabase'e cacheleyerek ilerlemeliyiz. Frontend dogrudan ucuncu parti API'ye gitmemeli; Next.js API route veya scheduled sync Supabase'i doldurmali.
 
@@ -7,11 +7,14 @@ Tam takim, kadro, oyuncu fotografi, lig fiksturu ve transfer/haber akisi icin ca
 - `RAPIDAPI_KEY`: RapidAPI uzerindeki futbol/SofaSport anahtari.
 - `RAPIDAPI_KEY`: RapidAPI hesabindaki ortak anahtar. RapidAPI'de farkli API'ler icin genelde ayni kalir.
 - `RAPIDAPI_HOST`: Baska RapidAPI entegrasyonlari icin kullanilan eski/genel host. SofaScore icin zorunlu degil.
+- `FREE_LIVE_FOOTBALL_RAPIDAPI_HOST`: Birinci futbol veri kaynagi. Bu proje icin: `free-api-live-football-data.p.rapidapi.com`.
+- `FOTMOB_RAPIDAPI_HOST`: Ikinci futbol veri kaynagi ve zengin kadro/gorsel fallback'i. Bu proje icin: `fotmob-api.p.rapidapi.com`.
 - `SOFASCORE_RAPIDAPI_HOST`: SofaScore RapidAPI host degeri. Bu proje icin: `sofascore.p.rapidapi.com`.
 - `FOOTBALLSERVICE_RAPIDAPI_HOST`: FootballService RapidAPI host degeri. Bu proje icin: `footballservice1.p.rapidapi.com`.
 - `TWITTER_FREE_API_RAPIDAPI_HOST`: Ucretsiz (free) Twitter/X arama API host degeri. Bu proje icin: `twittr-x-api-free-tweets-user-twitter-lookup.p.rapidapi.com`. Haber akisinda 1. sirada calisir.
 - `TWITTER_API_RAPIDAPI_HOST`: Twitter API RapidAPI host degeri. Free API bos donerse 2. sirada kullanilir: `twitter-api45.p.rapidapi.com`.
 - `SOFASCORE_RATE_LIMIT_MS`: Server-side istekler arasindaki minimum bekleme. Varsayilan: `350`.
+- `FREE_LIVE_FOOTBALL_RATE_LIMIT_MS`: Free Live Football istekleri arasindaki minimum bekleme. Varsayilan: `900`.
 - `FOOTBALLSERVICE_RATE_LIMIT_MS`: FootballService istekleri arasindaki minimum bekleme. Varsayilan: `500`.
 - `TWITTER_FREE_API_RATE_LIMIT_MS`: Free Twitter API istekleri arasindaki minimum bekleme. Varsayilan: `1200`.
 - `TWITTER_API_RATE_LIMIT_MS`: Twitter API istekleri arasindaki minimum bekleme. Varsayilan: `900`.
@@ -46,6 +49,7 @@ Tam takim, kadro, oyuncu fotografi, lig fiksturu ve transfer/haber akisi icin ca
 - Ortak TypeScript tipleri: `lib/sofascore/types.ts`
 - Server-side proxy: `app/api/sofascore/[...endpoint]/route.ts`
 - Takim kadro API route'u: `app/api/football/team-squad/route.ts`
+- Provider saglik testi route'u: `app/api/admin/provider-health/route.ts`
 - Gece kadro guncelleme cron route'u: `app/api/cron/update-squads/route.ts`
 - Supabase REST cache helper: `lib/supabase/rest.ts`
 - RapidAPI provider client: `lib/providers/rapidapi-provider.ts`

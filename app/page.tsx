@@ -22,6 +22,7 @@ import {
   Filter,
   Heart,
   Home as HomeIcon,
+  Globe2,
   Newspaper,
   Plus,
   RefreshCw,
@@ -39,7 +40,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-type ViewKey = "home" | "profile" | "lineup" | "scout";
+type ViewKey = "home" | "profile" | "lineup" | "scout" | "news";
 
 type NewsCard = {
   id: string;
@@ -70,9 +71,10 @@ const positions = [
 
 const navItems: Array<{ key: ViewKey; label: string; icon: React.ReactNode }> = [
   { key: "home", label: "Ana Sayfa", icon: <HomeIcon size={18} /> },
-  { key: "profile", label: "Futbolcular", icon: <UserRound size={18} /> },
-  { key: "lineup", label: "Hayalimdeki Ilk 11", icon: <Shield size={18} /> },
-  { key: "scout", label: "Scout Merkezi", icon: <Target size={18} /> }
+  { key: "profile", label: "Ligler ve Oyuncular", icon: <UserRound size={18} /> },
+  { key: "lineup", label: "Ilk 11 Olustur", icon: <Shield size={18} /> },
+  { key: "scout", label: "Scout Merkezi", icon: <Target size={18} /> },
+  { key: "news", label: "Blog Forum", icon: <Newspaper size={18} /> }
 ];
 
 const lineupSlots = buildFormationSlots("4-3-3");
@@ -295,9 +297,9 @@ export default function Home() {
   const budgetDelta = budget - squadValue;
 
   return (
-    <div className="stat11-shell">
+    <div className="transfer-shell">
       <SideNav view={view} setView={setView} />
-      <main className="stat11-main">
+      <main className="transfer-main">
         <TopNav
           query={query}
           setQuery={setQuery}
@@ -378,6 +380,8 @@ export default function Home() {
             setView={setView}
           />
         ) : null}
+
+        {view === "news" ? <NewsHub news={news} loading={loading} /> : null}
       </main>
       <MobileNav view={view} setView={setView} />
     </div>
@@ -389,11 +393,11 @@ function SideNav({ view, setView }: { view: ViewKey; setView: (view: ViewKey) =>
     <aside className="side-nav">
       <div className="brand-lockup">
         <div className="brand-icon">
-          S11
+          TZ
         </div>
         <div>
-          <strong>STAT11</strong>
-          <span>PRO ANALYTICS</span>
+          <strong>Transfer Zamanı</strong>
+          <span>transferzamani.com</span>
         </div>
       </div>
       <nav>
@@ -513,7 +517,7 @@ function HomeDashboard({
   const [countriesOpen, setCountriesOpen] = useState(false);
   const selectedTeams = fullLeagueTeams[selectedLeague.id] || leagueTeams[selectedLeague.id] || [];
   const portalPills = [
-    { label: "Canli veri", value: liveStatusText(data), tone: data ? "green" : "amber" },
+    { label: "Canli futbol verisi", value: liveStatusText(data), tone: data ? "green" : "amber" },
     { label: "Transfer duyumu", value: rumors[0]?.headline || "Yeni sinyal bekleniyor", tone: "green" },
     {
       label: "Haber",
@@ -522,7 +526,7 @@ function HomeDashboard({
         : "Mac baglami hazir",
       tone: "neutral"
     },
-    { label: "Kadro havuzu", value: `${players.length || filteredPlayers.length} profil`, tone: "neutral" }
+    { label: "Haber havuzu", value: `${news.length} kaynakli haber`, tone: "neutral" }
   ];
 
   return (
@@ -530,8 +534,8 @@ function HomeDashboard({
       <section className="pulse-board pitch-card">
         <div className="pulse-head">
           <div>
-            <span className="kicker">STAT11 AKIS</span>
-            <h1>Haberler, duyumlar ve lig kapisi</h1>
+            <span className="kicker">TRANSFER ZAMANI AKISI</span>
+            <h1>Transfer gündemi, ligler ve ilk 11 merkezi</h1>
           </div>
           <div className="pulse-actions">
             <button type="button" onClick={() => setView("scout")}>
@@ -587,6 +591,7 @@ function HomeDashboard({
                 setSelectedTeam(fullLeagueTeams[league.id]?.[0] || leagueTeams[league.id]?.[0] || "");
               }}
             >
+              <LeagueLogo league={league.id} />
               <span>{league.name}</span>
               <em>{league.country}</em>
               <b>{league.value}</b>
@@ -659,7 +664,9 @@ function HomeDashboard({
           <span className="kicker">TURKCE FUTBOL GUNDEMI</span>
           <h2>Kaynakli Haber Akisi</h2>
         </div>
-        <span className="muted-count">{news.length} haber</span>
+        <button className="ghost-link" type="button" onClick={() => setView("news")}>
+          Haber havuzu <ChevronRight size={16} />
+        </button>
       </section>
       <div className="news-grid">
         {(news.length ? news : []).slice(0, 6).map((item) => (
@@ -723,9 +730,41 @@ function HomeDashboard({
 }
 
 function TeamLogo({ folder, team }: { folder: string; team: string }) {
+  const liveLogo = `/api/image/team/${encodeURIComponent(team)}?league=${encodeURIComponent(folder)}`;
+  const localLogo = `/football/leagues/${folder}/${encodeURIComponent(team)}.png`;
+  const [src, setSrc] = useState(liveLogo);
+
+  useEffect(() => {
+    setSrc(liveLogo);
+  }, [liveLogo]);
+
   return (
     <span className="team-logo">
-      <img src={`/football/leagues/${folder}/${encodeURIComponent(team)}.png`} alt="" />
+      <img
+        src={src}
+        alt=""
+        onError={() => {
+          if (src !== localLogo) setSrc(localLogo);
+        }}
+      />
+    </span>
+  );
+}
+
+function LeagueLogo({ league }: { league: string }) {
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [league]);
+
+  return (
+    <span className="league-logo">
+      {!failed ? (
+        <img src={`/api/image/league/${encodeURIComponent(league)}`} alt="" onError={() => setFailed(true)} />
+      ) : (
+        <Globe2 size={18} />
+      )}
     </span>
   );
 }
@@ -735,6 +774,89 @@ function liveStatusText(data: GalatasarayPayload | null) {
   if (data.status.mode === "live") return "Canli API aktif";
   if (data.status.mode === "stale") return "Cache verisi";
   return "Fallback mod";
+}
+
+function NewsHub({ news, loading }: { news: NewsCard[]; loading: boolean }) {
+  const [category, setCategory] = useState<"all" | NewsCard["category"]>("all");
+  const [source, setSource] = useState("all");
+  const sources = useMemo(() => {
+    return Array.from(new Set(news.map((item) => item.sourceAccount || item.sourceName).filter(Boolean))).sort();
+  }, [news]);
+  const filtered = useMemo(() => {
+    return news.filter((item) => {
+      const categoryHit = category === "all" || item.category === category;
+      const sourceHit = source === "all" || item.sourceAccount === source || item.sourceName === source;
+      return categoryHit && sourceHit;
+    });
+  }, [category, news, source]);
+
+  return (
+    <div className="news-hub page-flow">
+      <section className="pitch-card news-hub-hero">
+        <div>
+          <span className="kicker">TRANSFER ZAMANI HABER HAVUZU</span>
+          <h1>Twitter/X, transfer kaynaklari ve futbol haberleri</h1>
+          <p>
+            Fabrizio Romano, yerli transfer kaynaklari, OptaCan, FotMob ve RSS akislari tek yerde
+            toplanir; tekrar eden haberler cache uzerinden ayrilir.
+          </p>
+        </div>
+        <div className="news-hub-stats">
+          <MiniStat label="TOPLAM" value={String(news.length)} sub="Haber" />
+          <MiniStat label="TRANSFER" value={String(news.filter((item) => item.category === "transfer").length)} sub="Duyum" />
+          <MiniStat label="KAYNAK" value={String(sources.length)} sub="Hesap" />
+        </div>
+      </section>
+
+      <section className="news-toolbar pitch-card">
+        <label>
+          <span>Kategori</span>
+          <select value={category} onChange={(event) => setCategory(event.target.value as typeof category)}>
+            <option value="all">Tum haberler</option>
+            <option value="transfer">Transfer</option>
+            <option value="istatistik">Istatistik</option>
+            <option value="haber">Genel haber</option>
+          </select>
+        </label>
+        <label>
+          <span>Kaynak</span>
+          <select value={source} onChange={(event) => setSource(event.target.value)}>
+            <option value="all">Tum kaynaklar</option>
+            {sources.map((item) => (
+              <option key={item} value={item}>
+                @{item}
+              </option>
+            ))}
+          </select>
+        </label>
+        <span className="muted-count">{filtered.length} kayit</span>
+      </section>
+
+      {loading && !news.length ? (
+        <section className="pitch-card empty-panel">
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
+        </section>
+      ) : filtered.length ? (
+        <div className="news-feed-grid">
+          {filtered.map((item) => (
+            <a className={`news-card ${item.category}`} href={item.sourceUrl} key={item.id} rel="noreferrer" target="_blank">
+              {item.imageUrl ? <img src={item.imageUrl} alt="" /> : <span className="news-fallback">{item.category}</span>}
+              <span className="news-meta">
+                <b>{item.league}</b>
+                <em>@{item.sourceAccount}</em>
+              </span>
+              <strong>{item.title}</strong>
+              <p>{item.summary}</p>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <EmptyPanel title="Haber bulunamadi" body="Secili filtreler icin cache veya canli kaynakta haber yok." />
+      )}
+    </div>
+  );
 }
 
 function ProfileWorkspace({
@@ -1400,7 +1522,7 @@ function LineupBuilder({
         </div>
         <div className="lineup-board-head">
           <div>
-            <span>STAT11 BUILDER</span>
+            <span>TRANSFER ZAMANI BUILDER</span>
             <strong>Hayalimdeki Ilk 11</strong>
           </div>
           <button type="button" onClick={clearLineup}>
@@ -1861,14 +1983,34 @@ function PlayerAvatar({
   player: Pick<PlayerProfile, "name" | "initials" | "imageUrl">;
   size: "sm" | "md" | "xl" | "hero" | "feature" | "lineup";
 }) {
+  const searchFallback = `/api/image/player-search/${encodeURIComponent(player.name)}`;
+  const [src, setSrc] = useState(player.imageUrl);
   const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setSrc(player.imageUrl);
+    setFailed(false);
+  }, [player.imageUrl]);
 
   return (
     <span className={`avatar avatar-${size}`} aria-label={player.name}>
       <span>{player.initials}</span>
       {!failed ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={player.imageUrl} alt="" decoding="async" loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
+        <img
+          src={src}
+          alt=""
+          decoding="async"
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={() => {
+            if (src !== searchFallback) {
+              setSrc(searchFallback);
+              return;
+            }
+            setFailed(true);
+          }}
+        />
       ) : null}
     </span>
   );

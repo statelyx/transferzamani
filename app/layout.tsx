@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Stat11",
-  description: "Futbolun veri merkezi"
+  title: "Transfer Zamanı | Transfer haberleri, ligler ve ilk 11",
+  description: "Transfer haberleri, futbolcu profilleri, ligler, kadrolar ve ilk 11 kurma merkezi."
 };
 
 export default function RootLayout({

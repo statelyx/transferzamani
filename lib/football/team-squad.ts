@@ -86,33 +86,31 @@ export async function getTeamSquad(team: string, league = "global") {
     return { ...(cached as TeamSquadPayload), source: "supabase" as const };
   }
 
-  try {
-    return await refreshTeamSquadFromFotMob(team, league, cached);
-  } catch (error) {
+  let firstError: unknown = null;
+
+  for (const provider of [refreshTeamSquadFromFreeLiveFootball, refreshTeamSquadFromFotMob, refreshTeamSquad]) {
     try {
-      return await refreshTeamSquad(team, league, cached);
-    } catch {
-      try {
-        return await refreshTeamSquadFromFreeLiveFootball(team, league, cached);
-      } catch {
-      const staleCached = await readSupabaseCache<TeamSquadPayload>(
-        TEAM_SQUAD_TABLE,
-        cacheKey,
-        STALE_TEAM_SQUAD_TTL_MS
-      );
-
-      if (isTrustedSquad(staleCached, team)) {
-        return {
-          ...(staleCached as TeamSquadPayload),
-          source: "supabase" as const
-        };
-      }
-
-      console.warn("FotMob/SofaScore squad refresh failed, using fallback:", error);
-      return buildFallbackTeamSquad(team, league);
-      }
+      return await provider(team, league, cached);
+    } catch (error) {
+      firstError ||= error;
     }
   }
+
+  const staleCached = await readSupabaseCache<TeamSquadPayload>(
+    TEAM_SQUAD_TABLE,
+    cacheKey,
+    STALE_TEAM_SQUAD_TTL_MS
+  );
+
+  if (isTrustedSquad(staleCached, team)) {
+    return {
+      ...(staleCached as TeamSquadPayload),
+      source: "supabase" as const
+    };
+  }
+
+  console.warn("FreeLive/FotMob/SofaScore squad refresh failed, using fallback:", firstError);
+  return buildFallbackTeamSquad(team, league);
 }
 
 async function refreshTeamSquadFromFotMob(team: string, league = "global", previous?: TeamSquadPayload | null) {
@@ -128,7 +126,11 @@ async function refreshTeamSquadFromFotMob(team: string, league = "global", previ
   return nextPayload;
 }
 
-async function refreshTeamSquadFromFreeLiveFootball(team: string, league = "global", previous?: TeamSquadPayload | null) {
+async function refreshTeamSquadFromFreeLiveFootball(
+  team: string,
+  league = "global",
+  _previous?: TeamSquadPayload | null
+): Promise<TeamSquadPayload> {
   const result = await freeLiveFootballSearchTeams(team);
   const match = result.suggestions
     .filter((item) => item.type === "team" && item.id && item.name)
@@ -139,24 +141,9 @@ async function refreshTeamSquadFromFreeLiveFootball(team: string, league = "glob
     throw new Error(`${team} icin Free Live Football takim eslesmesi bulunamadi.`);
   }
 
-  const players = teamNameMatches("Galatasaray", team)
-    ? getFallbackGalatasarayPlayers()
-    : await buildMasterFallbackPlayers(match.name || team, league);
-  const payload: TeamSquadPayload = {
-    source: "free-live-football",
-    team: {
-      id: Number(match.id),
-      name: match.name || team,
-      slug: normalizeTeamName(match.name || team).replaceAll(" ", "-")
-    },
-    players,
-    generatedAt: new Date().toISOString(),
-    changeSummary: buildSquadChangeSummary(previous?.players || [], players)
-  };
-
-  await writeTeamSquadCache(team, league, payload, payload.team.id, "free-live-football");
-
-  return payload;
+  throw new Error(
+    `${match.name || team} Free Live Football uzerinde eslesti ancak bu planda tam kadro endpointi kullanilabilir donmedi. FotMob deneniyor.`
+  );
 }
 
 export async function refreshTeamSquadWithProviders(
@@ -164,20 +151,18 @@ export async function refreshTeamSquadWithProviders(
   league = "global",
   previous?: TeamSquadPayload | null
 ) {
-  try {
-    return await refreshTeamSquadFromFotMob(team, league, previous);
-  } catch (fotMobError) {
+  let firstError: unknown = null;
+
+  for (const provider of [refreshTeamSquadFromFreeLiveFootball, refreshTeamSquadFromFotMob, refreshTeamSquad]) {
     try {
-      return await refreshTeamSquad(team, league, previous);
-    } catch {
-      try {
-        return await refreshTeamSquadFromFreeLiveFootball(team, league, previous);
-      } catch {
-        console.warn("Provider squad refresh failed, using local fallback:", fotMobError);
-        return buildFallbackTeamSquad(team, league);
-      }
+      return await provider(team, league, previous);
+    } catch (error) {
+      firstError ||= error;
     }
   }
+
+  console.warn("Provider squad refresh failed, using local fallback:", firstError);
+  return buildFallbackTeamSquad(team, league);
 }
 
 async function buildFallbackTeamSquad(team: string, league = "global"): Promise<TeamSquadPayload> {
