@@ -100,14 +100,26 @@ h3,
 .side-nav {
   position: sticky;
   top: 0;
+  z-index: 30;
   display: flex;
-  flex: 0 0 260px;
+  flex: 0 0 76px;
   flex-direction: column;
+  width: 76px;
   height: 100vh;
-  padding: 22px 16px;
+  padding: 18px 10px;
   border-right: 1px solid var(--line);
   background: rgba(12, 20, 26, 0.92);
   backdrop-filter: blur(14px);
+  transition:
+    flex-basis 180ms ease,
+    width 180ms ease,
+    padding 180ms ease;
+}
+
+.side-nav:hover {
+  flex-basis: 260px;
+  width: 260px;
+  padding-inline: 16px;
 }
 
 .brand-lockup {
@@ -116,6 +128,7 @@ h3,
   gap: 12px;
   margin-bottom: 30px;
   padding: 0 4px;
+  white-space: nowrap;
 }
 
 .brand-icon {
@@ -153,6 +166,18 @@ h3,
 .brand-lockup strong,
 .brand-lockup span {
   display: block;
+  overflow: hidden;
+  max-width: 0;
+  opacity: 0;
+  transition:
+    max-width 180ms ease,
+    opacity 140ms ease;
+}
+
+.side-nav:hover .brand-lockup strong,
+.side-nav:hover .brand-lockup span {
+  max-width: 180px;
+  opacity: 1;
 }
 
 .brand-lockup strong {
@@ -198,9 +223,53 @@ h3,
 }
 
 .side-nav button {
+  position: relative;
+  justify-content: center;
   min-height: 42px;
-  padding: 0 12px;
+  padding: 0;
   text-align: left;
+  white-space: nowrap;
+}
+
+.side-nav:hover button {
+  justify-content: flex-start;
+  padding: 0 12px;
+}
+
+.side-nav button span {
+  overflow: hidden;
+  max-width: 0;
+  opacity: 0;
+  transition:
+    max-width 180ms ease,
+    opacity 140ms ease;
+}
+
+.side-nav:hover button span {
+  max-width: 170px;
+  opacity: 1;
+}
+
+.side-nav:not(:hover) button::after {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  z-index: 40;
+  display: none;
+  min-width: max-content;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(12, 20, 26, 0.96);
+  color: var(--text);
+  content: attr(aria-label);
+  font-size: 0.78rem;
+  font-weight: 850;
+  transform: translateY(-50%);
+}
+
+.side-nav:not(:hover) button:hover::after {
+  display: block;
 }
 
 .side-nav button:hover,
@@ -879,6 +948,212 @@ h3,
   gap: 12px;
 }
 
+.player-pool-workspace {
+  padding-bottom: 28px;
+}
+
+.player-pool-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 22px;
+  align-items: end;
+  padding: 24px;
+}
+
+.player-pool-hero h1 {
+  max-width: 800px;
+  margin: 6px 0 10px;
+  font-size: clamp(1.8rem, 2.8vw, 3.1rem);
+  line-height: 1.02;
+}
+
+.player-pool-hero p {
+  max-width: 720px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.pool-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 128px);
+  gap: 10px;
+}
+
+.player-pool-filters {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.4fr) repeat(5, minmax(130px, 1fr));
+  gap: 10px;
+  align-items: end;
+  padding: 14px;
+}
+
+.player-pool-filters label {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.player-pool-filters label > span {
+  color: var(--muted-dim);
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.player-pool-filters select,
+.pool-search {
+  min-width: 0;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(12, 20, 26, 0.58);
+  color: var(--text);
+}
+
+.player-pool-filters select {
+  padding: 0 10px;
+  font-weight: 800;
+}
+
+.pool-search {
+  display: flex !important;
+  grid-template-columns: none !important;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+}
+
+.pool-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 760;
+}
+
+.player-pool-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(420px, 0.85fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.pool-results {
+  padding: 16px;
+}
+
+.pool-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pool-player-card {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto;
+  gap: 5px 12px;
+  min-width: 0;
+  min-height: 116px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(35, 43, 49, 0.55);
+  color: var(--text);
+  text-align: left;
+}
+
+.pool-player-card:hover,
+.pool-player-card.active {
+  border-color: rgba(84, 233, 138, 0.74);
+  background: rgba(84, 233, 138, 0.1);
+}
+
+.pool-player-card .avatar {
+  grid-row: 1 / span 3;
+}
+
+.pool-player-card strong,
+.pool-player-card em {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pool-player-card strong {
+  font-size: 0.96rem;
+}
+
+.pool-player-card em {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-style: normal;
+}
+
+.pool-player-card b {
+  justify-self: end;
+  color: var(--primary);
+  font-size: 0.86rem;
+  white-space: nowrap;
+}
+
+.pool-player-card i,
+.pool-player-card small {
+  align-self: end;
+  width: max-content;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: rgba(84, 233, 138, 0.12);
+  color: var(--primary);
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.pool-player-card small {
+  justify-self: end;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+}
+
+.pool-detail {
+  position: sticky;
+  top: 82px;
+  display: grid;
+  gap: 16px;
+  max-height: calc(100vh - 100px);
+  overflow: auto;
+}
+
+.pool-detail .player-hero {
+  grid-template-columns: 120px minmax(0, 1fr);
+}
+
+.pool-detail .player-hero .market-block {
+  grid-column: 1 / -1;
+  padding: 12px 0 0;
+  border-top: 1px solid var(--line);
+  border-left: 0;
+}
+
+.pool-detail .avatar-hero {
+  width: 120px;
+  height: 156px;
+}
+
+.pool-error {
+  width: 100%;
+  margin: 0;
+}
+
 .hero-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(340px, 0.8fr);
@@ -1135,7 +1410,21 @@ h3,
 }
 
 .player-feature {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  align-items: center;
+  min-height: 132px;
   border: 1px solid var(--line);
+}
+
+.player-feature .avatar-feature {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+}
+
+.player-feature .feature-stats {
+  grid-column: 1 / -1;
 }
 
 .player-feature:hover,
@@ -2658,7 +2947,8 @@ td:nth-child(2) {
   .profile-layout,
   .lineup-workspace,
   .scout-grid,
-  .league-browser {
+  .league-browser,
+  .player-pool-layout {
     grid-template-columns: 1fr;
     height: auto;
   }
@@ -2666,7 +2956,8 @@ td:nth-child(2) {
   .pulse-strip,
   .team-grid,
   .news-grid,
-  .news-feed-grid {
+  .news-feed-grid,
+  .pool-card-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
@@ -2682,6 +2973,11 @@ td:nth-child(2) {
 
   .lineup-panel {
     overflow: visible;
+  }
+
+  .pool-detail {
+    position: static;
+    max-height: none;
   }
 }
 
@@ -2714,7 +3010,9 @@ td:nth-child(2) {
 
   .hero-panel,
   .scout-filter,
-  .player-hero {
+  .player-hero,
+  .player-pool-hero,
+  .player-pool-filters {
     grid-template-columns: 1fr;
   }
 
@@ -2733,7 +3031,9 @@ td:nth-child(2) {
   .stat-bento,
   .squad-stats,
   .insight-dock,
-  .news-feed-grid {
+  .news-feed-grid,
+  .pool-card-grid,
+  .pool-hero-stats {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -2831,8 +3131,19 @@ td:nth-child(2) {
   .team-grid,
   .news-grid,
   .news-feed-grid,
-  .news-hub-stats {
+  .news-hub-stats,
+  .pool-card-grid,
+  .pool-hero-stats {
     grid-template-columns: 1fr;
+  }
+
+  .pool-player-card {
+    grid-template-columns: 62px minmax(0, 1fr);
+  }
+
+  .pool-player-card b,
+  .pool-player-card small {
+    justify-self: start;
   }
 
   .pulse-board,

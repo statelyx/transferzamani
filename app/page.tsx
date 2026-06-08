@@ -71,7 +71,7 @@ const positions = [
 
 const navItems: Array<{ key: ViewKey; label: string; icon: React.ReactNode }> = [
   { key: "home", label: "Ana Sayfa", icon: <HomeIcon size={18} /> },
-  { key: "profile", label: "Ligler ve Oyuncular", icon: <UserRound size={18} /> },
+  { key: "profile", label: "Oyuncu Havuzu", icon: <UserRound size={18} /> },
   { key: "lineup", label: "Ilk 11 Olustur", icon: <Shield size={18} /> },
   { key: "scout", label: "Scout Merkezi", icon: <Target size={18} /> },
   { key: "news", label: "Blog Forum", icon: <Newspaper size={18} /> }
@@ -161,8 +161,8 @@ export default function Home() {
   const [lineup, setLineup] = useState<Record<string, number | null>>({});
 
   // Lifted team squad states
-  const [selectedLeague, setSelectedLeague] = useState(leagueCatalog[5]);
-  const [selectedTeam, setSelectedTeam] = useState("Galatasaray");
+  const [selectedLeague, setSelectedLeague] = useState(leagueCatalog[0]);
+  const [selectedTeam, setSelectedTeam] = useState(fullLeagueTeams[leagueCatalog[0].id]?.[0] || "AFC Bournemouth");
   const [remoteSquad, setRemoteSquad] = useState<PlayerProfile[]>([]);
   const [squadLoading, setSquadLoading] = useState(false);
   const [squadError, setSquadError] = useState<string | null>(null);
@@ -337,22 +337,14 @@ export default function Home() {
         ) : null}
 
         {view === "profile" ? (
-          <ProfileWorkspace
-            players={filteredPlayers}
-            allPlayers={players}
-            selectedPlayer={selectedPlayer}
-            position={position}
-            setPosition={setPosition}
-            setSelectedId={setSelectedId}
-            comparePlayerA={comparePlayerA}
-            comparePlayerB={comparePlayerB}
+          <PlayerPoolWorkspace
+            seedPlayers={players}
             compareA={compareA}
             compareB={compareB}
             setCompareA={setCompareA}
             setCompareB={setCompareB}
-            rumors={data?.rumors || []}
-            loading={loading}
             news={news}
+            rumors={data?.rumors || []}
           />
         ) : null}
 
@@ -402,14 +394,20 @@ function SideNav({ view, setView }: { view: ViewKey; setView: (view: ViewKey) =>
       </div>
       <nav>
         {navItems.map((item) => (
-          <button className={view === item.key ? "active" : ""} key={item.key} type="button" onClick={() => setView(item.key)}>
+          <button
+            aria-label={item.label}
+            className={view === item.key ? "active" : ""}
+            key={item.key}
+            type="button"
+            onClick={() => setView(item.key)}
+          >
             {item.icon}
             <span>{item.label}</span>
           </button>
         ))}
       </nav>
       <div className="side-footer">
-        <button type="button">
+        <button type="button" aria-label="Ayarlar">
           <Settings size={18} />
           <span>Ayarlar</span>
         </button>
@@ -776,6 +774,14 @@ function liveStatusText(data: GalatasarayPayload | null) {
   return "Fallback mod";
 }
 
+function ageBandToRange(value: string): [number, number] {
+  if (value === "U21") return [0, 21];
+  if (value === "22-25") return [22, 25];
+  if (value === "26-30") return [26, 30];
+  if (value === "31+") return [31, 0];
+  return [0, 0];
+}
+
 function NewsHub({ news, loading }: { news: NewsCard[]; loading: boolean }) {
   const [category, setCategory] = useState<"all" | NewsCard["category"]>("all");
   const [source, setSource] = useState("all");
@@ -855,6 +861,253 @@ function NewsHub({ news, loading }: { news: NewsCard[]; loading: boolean }) {
       ) : (
         <EmptyPanel title="Haber bulunamadi" body="Secili filtreler icin cache veya canli kaynakta haber yok." />
       )}
+    </div>
+  );
+}
+
+function PlayerPoolWorkspace({
+  seedPlayers,
+  compareA,
+  compareB,
+  setCompareA,
+  setCompareB,
+  news,
+  rumors
+}: {
+  seedPlayers: PlayerProfile[];
+  compareA: number | null;
+  compareB: number | null;
+  setCompareA: (id: number) => void;
+  setCompareB: (id: number) => void;
+  news: NewsCard[];
+  rumors: Rumor[];
+}) {
+  const [poolQuery, setPoolQuery] = useState("");
+  const [poolLeague, setPoolLeague] = useState(leagueCatalog[0].id);
+  const [poolCountry, setPoolCountry] = useState("ALL");
+  const [poolTeam, setPoolTeam] = useState("ALL");
+  const [poolPosition, setPoolPosition] = useState("ALL");
+  const [ageBand, setAgeBand] = useState("ALL");
+  const [poolPlayers, setPoolPlayers] = useState<PlayerProfile[]>(seedPlayers);
+  const [selectedPoolId, setSelectedPoolId] = useState<number | null>(seedPlayers[0]?.id || null);
+  const [poolLoading, setPoolLoading] = useState(false);
+  const [poolError, setPoolError] = useState<string | null>(null);
+
+  const league = leagueCatalog.find((item) => item.id === poolLeague) || leagueCatalog[0];
+  const teams = fullLeagueTeams[league.id] || leagueTeams[league.id] || [];
+  const [ageMin, ageMax] = ageBandToRange(ageBand);
+
+  useEffect(() => {
+    setPoolTeam("ALL");
+  }, [poolLeague]);
+
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+
+    async function loadPool() {
+      setPoolLoading(true);
+      setPoolError(null);
+
+      const params = new URLSearchParams({
+        limit: "120",
+        league: poolLeague,
+        country: poolCountry,
+        team: poolTeam,
+        position: poolPosition
+      });
+
+      if (poolQuery.trim()) params.set("q", poolQuery.trim());
+      if (ageMin) params.set("ageMin", String(ageMin));
+      if (ageMax) params.set("ageMax", String(ageMax));
+
+      try {
+        const response = await fetch(`/api/football/player-pool?${params.toString()}`, {
+          signal: controller.signal
+        });
+        const payload = (await response.json()) as PlayerSearchPayload & { error?: string };
+        if (!active) return;
+
+        if (!response.ok) {
+          setPoolError(payload.error || "Oyuncu havuzu okunamadi.");
+          setPoolPlayers(seedPlayers);
+          return;
+        }
+
+        const nextPlayers = payload.players || [];
+        setPoolPlayers(nextPlayers);
+        setSelectedPoolId((current) => {
+          if (current && nextPlayers.some((player) => player.id === current)) return current;
+          return nextPlayers[0]?.id || null;
+        });
+      } catch (error) {
+        if (active && !(error instanceof DOMException && error.name === "AbortError")) {
+          setPoolError(error instanceof Error ? error.message : "Oyuncu havuzu okunamadi.");
+          setPoolPlayers(seedPlayers);
+        }
+      } finally {
+        if (active) setPoolLoading(false);
+      }
+    }
+
+    const timer = window.setTimeout(loadPool, poolQuery.trim() ? 260 : 0);
+    return () => {
+      active = false;
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [ageMax, ageMin, poolCountry, poolLeague, poolPosition, poolQuery, poolTeam, seedPlayers]);
+
+  const selectedPlayer = poolPlayers.find((player) => player.id === selectedPoolId) || poolPlayers[0] || null;
+  const comparePlayerA = poolPlayers.find((player) => player.id === compareA) || null;
+  const comparePlayerB = poolPlayers.find((player) => player.id === compareB) || null;
+
+  return (
+    <div className="player-pool-workspace page-flow">
+      <section className="player-pool-hero pitch-card">
+        <div>
+          <span className="kicker">OYUNCU HAVUZU</span>
+          <h1>Dunya futbolcu arama merkezi</h1>
+          <p>Lig, ulke, takim, mevki ve yas filtresiyle FIFA transfer ekranı gibi oyuncu tarayın.</p>
+        </div>
+        <div className="pool-hero-stats">
+          <MiniStat label="LISTE" value={String(poolPlayers.length)} sub="Oyuncu" />
+          <MiniStat label="LIG" value={league.name} sub={league.country} />
+          <MiniStat label="KAYNAK" value="API + DB" sub="Cache" />
+        </div>
+      </section>
+
+      <section className="player-pool-filters pitch-card">
+        <label className="pool-search">
+          <Search size={17} />
+          <input
+            value={poolQuery}
+            onChange={(event) => setPoolQuery(event.target.value)}
+            placeholder="Oyuncu, takim veya ulke ara..."
+            type="search"
+          />
+        </label>
+        <label>
+          <span>Lig</span>
+          <select value={poolLeague} onChange={(event) => setPoolLeague(event.target.value)}>
+            {leagueCatalog.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>Ulke</span>
+          <select value={poolCountry} onChange={(event) => setPoolCountry(event.target.value)}>
+            <option value="ALL">Tum ulkeler</option>
+            {countryOptions.map((item) => (
+              <option key={item.name} value={item.name}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>Takim</span>
+          <select value={poolTeam} onChange={(event) => setPoolTeam(event.target.value)}>
+            <option value="ALL">Tum takimlar</option>
+            {teams.map((team) => (
+              <option key={team} value={team}>
+                {team}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span>Mevki</span>
+          <select value={poolPosition} onChange={(event) => setPoolPosition(event.target.value)}>
+            <option value="ALL">Tum mevkiler</option>
+            <option value="G">Kaleci</option>
+            <option value="D">Defans</option>
+            <option value="M">Orta saha</option>
+            <option value="F">Forvet</option>
+          </select>
+        </label>
+        <label>
+          <span>Yas</span>
+          <select value={ageBand} onChange={(event) => setAgeBand(event.target.value)}>
+            <option value="ALL">Tum yaslar</option>
+            <option value="U21">21 alti</option>
+            <option value="22-25">22-25</option>
+            <option value="26-30">26-30</option>
+            <option value="31+">31+</option>
+          </select>
+        </label>
+      </section>
+
+      {poolError ? (
+        <section className="error-state pool-error">
+          <AlertCircle size={20} />
+          <div>
+            <strong>Oyuncu havuzu gecici olarak cache verisiyle calisiyor</strong>
+            <p>{poolError}</p>
+          </div>
+        </section>
+      ) : null}
+
+      <div className="player-pool-layout">
+        <section className="pool-results pitch-card">
+          <div className="section-head compact">
+            <div>
+              <span className="kicker">FIFA TARZI ARAMA</span>
+              <h2>{poolLoading ? "Oyuncular yukleniyor" : `${poolPlayers.length} oyuncu`}</h2>
+            </div>
+            <span className="muted-count">{league.name}</span>
+          </div>
+          <div className="pool-card-grid">
+            {poolLoading
+              ? Array.from({ length: 12 }, (_, index) => <SkeletonRow key={index} />)
+              : poolPlayers.map((player) => (
+                  <button
+                    className={selectedPlayer?.id === player.id ? "pool-player-card active" : "pool-player-card"}
+                    key={`${player.id}:${player.name}`}
+                    type="button"
+                    onClick={() => setSelectedPoolId(player.id)}
+                  >
+                    <PlayerAvatar player={player} size="md" />
+                    <span>
+                      <strong>{player.name}</strong>
+                      <em>{player.team.name} / {player.country}</em>
+                    </span>
+                    <b>{player.marketValueLabel}</b>
+                    <i>{player.positionLabel}</i>
+                    <small>{player.age ? `${player.age} yas` : "Yas yok"}</small>
+                  </button>
+                ))}
+          </div>
+          {!poolLoading && poolPlayers.length === 0 ? (
+            <EmptyPanel title="Oyuncu bulunamadi" body="Filtreleri genislet veya arama metnini degistir." />
+          ) : null}
+        </section>
+
+        <aside className="pool-detail">
+          {selectedPlayer ? (
+            <>
+              <PlayerHero player={selectedPlayer} setCompareA={setCompareA} setCompareB={setCompareB} />
+              <PlayerAnalytics player={selectedPlayer} />
+              <ComparisonPanel
+                players={poolPlayers}
+                playerA={comparePlayerA}
+                playerB={comparePlayerB}
+                compareA={compareA}
+                compareB={compareB}
+                setCompareA={setCompareA}
+                setCompareB={setCompareB}
+              />
+              <PlayerNews player={selectedPlayer} news={news} />
+              <RelatedRumors rumors={rumors} selectedPlayer={selectedPlayer} />
+            </>
+          ) : (
+            <EmptyPanel title="Oyuncu sec" body="Detay analizi icin havuzdan bir futbolcu sec." />
+          )}
+        </aside>
+      </div>
     </div>
   );
 }
@@ -1980,15 +2233,18 @@ function PlayerAvatar({
   player,
   size
 }: {
-  player: Pick<PlayerProfile, "name" | "initials" | "imageUrl">;
+  player: Pick<PlayerProfile, "id" | "name" | "initials" | "imageUrl">;
   size: "sm" | "md" | "xl" | "hero" | "feature" | "lineup";
 }) {
   const searchFallback = `/api/image/player-search/${encodeURIComponent(player.name)}`;
+  const fotMobFallback = player.id > 0 ? `https://images.fotmob.com/image_resources/playerimages/${player.id}.png` : "";
   const [src, setSrc] = useState(player.imageUrl);
+  const [fallbackStep, setFallbackStep] = useState(0);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     setSrc(player.imageUrl);
+    setFallbackStep(0);
     setFailed(false);
   }, [player.imageUrl]);
 
@@ -2004,7 +2260,13 @@ function PlayerAvatar({
           loading="lazy"
           referrerPolicy="no-referrer"
           onError={() => {
-            if (src !== searchFallback) {
+            if (fallbackStep === 0 && fotMobFallback && src !== fotMobFallback) {
+              setFallbackStep(1);
+              setSrc(fotMobFallback);
+              return;
+            }
+            if (fallbackStep <= 1 && src !== searchFallback) {
+              setFallbackStep(2);
               setSrc(searchFallback);
               return;
             }
