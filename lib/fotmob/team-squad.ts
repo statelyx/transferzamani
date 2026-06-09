@@ -160,7 +160,7 @@ function fotMobMemberToProfile(
     contractUntil: null,
     contractMonthsRemaining: null,
     contractRisk: "Orta",
-    imageUrl: `https://images.fotmob.com/image_resources/playerimages/${member.id}.png`,
+    imageUrl: `/api/image/fotmob-player/${member.id}`,
     team: {
       id: data.teamId,
       name: data.teamName,

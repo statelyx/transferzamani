@@ -1,39 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { PlayerProfile } from "@/lib/sofasport";
 import { loadPlayersMasterIndex, masterPlayerToProfile } from "@/lib/football/player-master";
-import { listSupabaseRows, upsertSupabaseRows } from "@/lib/supabase/rest";
+import { listCachedPoolPlayers, listCachedSquadPlayers, writePlayersToPoolCache } from "@/lib/football/player-pool-cache";
 
 export const dynamic = "force-dynamic";
-
-type PlayerPoolRow = {
-  payload: PlayerProfile;
-  position?: string;
-  market_value?: number | null;
-  updated_at?: string;
-};
 
 export async function GET(request: NextRequest) {
   const position = request.nextUrl.searchParams.get("position")?.trim();
   const query = normalize(request.nextUrl.searchParams.get("q")?.trim() || "");
-  const league = request.nextUrl.searchParams.get("league")?.trim() || "premier-league";
+  const league = request.nextUrl.searchParams.get("league")?.trim() || "ALL";
   const country = request.nextUrl.searchParams.get("country")?.trim() || "ALL";
   const team = request.nextUrl.searchParams.get("team")?.trim() || "ALL";
   const ageMin = Number(request.nextUrl.searchParams.get("ageMin") || 0);
   const ageMax = Number(request.nextUrl.searchParams.get("ageMax") || 0);
-  const limit = Math.min(Number(request.nextUrl.searchParams.get("limit") || 120), 300);
+  const limit = Math.min(Number(request.nextUrl.searchParams.get("limit") || 600), 900);
   const leagueCountry = leagueCountryName(league);
 
-  const [masterPlayers, rows] = await Promise.all([
+  const [masterPlayers, squadPlayers, cachedPlayers] = await Promise.all([
     loadPlayersMasterIndex(),
-    listSupabaseRows<PlayerPoolRow>(
-    "player_pool_cache",
-    "payload,position,market_value,updated_at",
-    "market_value.desc.nullslast",
-    limit
-    )
+    listCachedSquadPlayers(800),
+    listCachedPoolPlayers(800)
   ]);
 
-  const cachedPlayers = rows.map((row) => row.payload).filter(Boolean);
   const masterProfiles = masterPlayers
     .filter((player) => !position || position === "ALL" || player.position === position)
     .filter((player) => country === "ALL" || normalize(player.countryName) === normalize(country))
@@ -49,15 +37,19 @@ export async function GET(request: NextRequest) {
     .slice(0, limit)
     .map(masterPlayerToProfile);
 
-  const players = mergePlayers([...cachedPlayers, ...masterProfiles])
+  const players = mergePlayers([...squadPlayers, ...cachedPlayers, ...masterProfiles])
     .filter((player) => !position || position === "ALL" || player.position === position)
-    .filter((player) => country === "ALL" || normalize(player.country).includes(normalize(country)))
+    .filter((player) => country === "ALL" || countryMatches(player.country, country))
     .filter((player) => team === "ALL" || normalize(player.team.name).includes(normalize(team)))
     .filter((player) => {
       if (!league || league === "ALL") return true;
       const tournament = normalize(player.team.tournament || "");
       const playerCountry = normalize(player.country || "");
-      return tournament.includes(normalize(leagueDisplayName(league))) || playerCountry.includes(normalize(leagueCountry));
+      const leagueMatch = tournament.includes(normalize(leagueDisplayName(league)));
+      const masterFallbackMatch =
+        tournament.includes(normalize("Oyuncu Master Index")) && playerCountry.includes(normalize(leagueCountry));
+
+      return leagueMatch || masterFallbackMatch;
     })
     .filter((player) => !ageMin || (player.age || 0) >= ageMin)
     .filter((player) => !ageMax || (player.age || 999) <= ageMax)
@@ -77,35 +69,18 @@ export async function GET(request: NextRequest) {
     })
     .slice(0, limit);
 
-  await writeVisiblePlayers(players);
+  await writePlayersToPoolCache(players, "player-pool");
 
   return NextResponse.json(
     {
       players,
-      source: "players-master+supabase-cache",
+      source: "team-squad-cache+player-pool-cache+players-master",
       totalMaster: masterPlayers.length,
+      totalCachedSquadPlayers: squadPlayers.length,
+      totalCachedPoolPlayers: cachedPlayers.length,
       filters: { league, country, team, position, ageMin, ageMax }
     },
     { headers: { "Cache-Control": "s-maxage=120, stale-while-revalidate=3600" } }
-  );
-}
-
-async function writeVisiblePlayers(players: PlayerProfile[]) {
-  await upsertSupabaseRows(
-    "player_pool_cache",
-    players.map((player) => ({
-      cache_key: `pool:${player.id}`,
-      player_id: player.id,
-      player_name: player.name,
-      team_id: player.team.id,
-      team_name: player.team.name,
-      country_name: player.country,
-      league_name: player.team.tournament,
-      position: player.position,
-      market_value: player.marketValue,
-      payload: player,
-      source: "player-pool"
-    }))
   );
 }
 
@@ -152,4 +127,26 @@ function leagueCountryName(league: string) {
     "super-lig": "Turkey"
   };
   return labels[league] || "";
+}
+
+function countryMatches(actual: string, expected: string) {
+  const actualNormalized = normalize(actual || "");
+  return countryAliases(expected).some((candidate) => actualNormalized.includes(normalize(candidate)));
+}
+
+function countryAliases(country: string) {
+  const aliases: Record<string, string[]> = {
+    Ingiltere: ["Ingiltere", "England", "United Kingdom", "Great Britain"],
+    Ispanya: ["Ispanya", "Spain"],
+    Italya: ["Italya", "Italy"],
+    Almanya: ["Almanya", "Germany"],
+    Fransa: ["Fransa", "France"],
+    Turkiye: ["Turkiye", "Turkey", "Türkiye"],
+    Brezilya: ["Brezilya", "Brazil"],
+    Arjantin: ["Arjantin", "Argentina"],
+    Portekiz: ["Portekiz", "Portugal"],
+    Hollanda: ["Hollanda", "Netherlands", "Nederland"]
+  };
+
+  return aliases[country] || [country];
 }

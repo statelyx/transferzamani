@@ -40,7 +40,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-type ViewKey = "home" | "profile" | "lineup" | "scout" | "news";
+type ViewKey = "matches" | "home" | "profile" | "squad" | "lineup" | "scout" | "news";
 
 type NewsCard = {
   id: string;
@@ -61,6 +61,20 @@ type PlayerSearchPayload = {
   error?: string;
 };
 
+type LiveFixture = {
+  id: string;
+  league: string;
+  status: string;
+  minute: string | null;
+  startTime: string;
+  homeTeam: string;
+  awayTeam: string;
+  homeScore: string | number | null;
+  awayScore: string | number | null;
+  homeLogo: string | null;
+  awayLogo: string | null;
+};
+
 const positions = [
   { key: "ALL", label: "TUMU" },
   { key: "G", label: "GK" },
@@ -70,8 +84,10 @@ const positions = [
 ];
 
 const navItems: Array<{ key: ViewKey; label: string; icon: React.ReactNode }> = [
+  { key: "matches", label: "Canli Maclar", icon: <CalendarDays size={18} /> },
   { key: "home", label: "Ana Sayfa", icon: <HomeIcon size={18} /> },
   { key: "profile", label: "Oyuncu Havuzu", icon: <UserRound size={18} /> },
+  { key: "squad", label: "Kadro Merkezi", icon: <Users size={18} /> },
   { key: "lineup", label: "Ilk 11 Olustur", icon: <Shield size={18} /> },
   { key: "scout", label: "Scout Merkezi", icon: <Target size={18} /> },
   { key: "news", label: "Blog Forum", icon: <Newspaper size={18} /> }
@@ -167,6 +183,9 @@ export default function Home() {
   const [squadLoading, setSquadLoading] = useState(false);
   const [squadError, setSquadError] = useState<string | null>(null);
   const [news, setNews] = useState<NewsCard[]>([]);
+  const [fixtures, setFixtures] = useState<LiveFixture[]>([]);
+  const [fixturesLoading, setFixturesLoading] = useState(false);
+  const [fixturesError, setFixturesError] = useState<string | null>(null);
 
   async function loadData() {
     setLoading(true);
@@ -198,6 +217,23 @@ export default function Home() {
       .then((response) => response.json())
       .then((payload) => setNews(payload.news || []))
       .catch(() => setNews([]));
+  }, []);
+
+  useEffect(() => {
+    setFixturesLoading(true);
+    setFixturesError(null);
+    fetch("/api/football/live-fixtures")
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Canli fikstur alinamadi.");
+        return payload as { fixtures: LiveFixture[] };
+      })
+      .then((payload) => setFixtures(payload.fixtures || []))
+      .catch((requestError) => {
+        setFixtures([]);
+        setFixturesError(requestError instanceof Error ? requestError.message : "Canli fikstur alinamadi.");
+      })
+      .finally(() => setFixturesLoading(false));
   }, []);
 
   const gsPlayers = data?.players || [];
@@ -311,6 +347,10 @@ export default function Home() {
         {error ? <ErrorState message={error} onRetry={loadData} /> : null}
         {data && data.status.mode !== "live" ? <DataNotice status={data.status} /> : null}
 
+        {view === "matches" ? (
+          <MatchesHub fixtures={fixtures} loading={fixturesLoading} error={fixturesError} />
+        ) : null}
+
         {view === "home" ? (
           <HomeDashboard
             data={data}
@@ -322,7 +362,7 @@ export default function Home() {
             setView={setView}
             onSelectPlayer={(id) => {
               setSelectedId(id);
-              setView("profile");
+              setView("squad");
             }}
             selectedLeague={selectedLeague}
             setSelectedLeague={setSelectedLeague}
@@ -345,6 +385,29 @@ export default function Home() {
             setCompareB={setCompareB}
             news={news}
             rumors={data?.rumors || []}
+          />
+        ) : null}
+
+        {view === "squad" ? (
+          <ProfileWorkspace
+            players={filteredPlayers}
+            allPlayers={players}
+            selectedPlayer={selectedPlayer}
+            position={position}
+            setPosition={setPosition}
+            setSelectedId={setSelectedId}
+            comparePlayerA={comparePlayerA}
+            comparePlayerB={comparePlayerB}
+            compareA={compareA}
+            compareB={compareB}
+            setCompareA={setCompareA}
+            setCompareB={setCompareB}
+            rumors={data?.rumors || []}
+            loading={loading || squadLoading}
+            news={news}
+            selectedTeam={selectedTeam}
+            selectedLeague={selectedLeague.name}
+            squadError={squadError}
           />
         ) : null}
 
@@ -417,12 +480,20 @@ function SideNav({ view, setView }: { view: ViewKey; setView: (view: ViewKey) =>
 }
 
 function MobileNav({ view, setView }: { view: ViewKey; setView: (view: ViewKey) => void }) {
+  const mobileItems: Array<{ key: ViewKey; label: string; icon: React.ReactNode }> = [
+    { key: "matches", label: "Maclar", icon: <CalendarDays size={20} /> },
+    { key: "news", label: "Haberler", icon: <Newspaper size={20} /> },
+    { key: "home", label: "Ligler", icon: <Trophy size={20} /> },
+    { key: "scout", label: "Takip", icon: <Sparkles size={20} /> },
+    { key: "profile", label: "Ara", icon: <Search size={20} /> }
+  ];
+
   return (
     <nav className="mobile-nav">
-      {navItems.map((item) => (
+      {mobileItems.map((item) => (
         <button className={view === item.key ? "active" : ""} key={item.key} type="button" onClick={() => setView(item.key)}>
           {item.icon}
-          <span>{item.label.split(" ")[0]}</span>
+          <span>{item.label}</span>
         </button>
       ))}
     </nav>
@@ -609,7 +680,15 @@ function HomeDashboard({
           </div>
           <div className="team-grid">
             {selectedTeams.map((team) => (
-              <button className={selectedTeam === team ? "team-card active" : "team-card"} type="button" key={team} onClick={() => setSelectedTeam(team)}>
+              <button
+                className={selectedTeam === team ? "team-card active" : "team-card"}
+                type="button"
+                key={team}
+                onClick={() => {
+                  setSelectedTeam(team);
+                  setView("squad");
+                }}
+              >
                 <TeamLogo folder={selectedLeague.folder} team={team} />
                 <strong>{team}</strong>
                 <em>Kadroya gir</em>
@@ -651,7 +730,7 @@ function HomeDashboard({
               </div>
             )}
           </div>
-          <button className="squad-open" type="button" onClick={() => setView("profile")}>
+          <button className="squad-open" type="button" onClick={() => setView("squad")}>
             Tam kadro ve analiz <ArrowRight size={16} />
           </button>
         </aside>
@@ -718,7 +797,7 @@ function HomeDashboard({
               {selectedPlayer.positionLabel} / {selectedPlayer.country} / {selectedPlayer.marketValueLabel}
             </p>
           </div>
-          <button type="button" onClick={() => setView("profile")}>
+          <button type="button" onClick={() => setView("squad")}>
             Analize git <ArrowRight size={16} />
           </button>
         </section>
@@ -780,6 +859,146 @@ function ageBandToRange(value: string): [number, number] {
   if (value === "26-30") return [26, 30];
   if (value === "31+") return [31, 0];
   return [0, 0];
+}
+
+function MatchesHub({ fixtures, loading, error }: { fixtures: LiveFixture[]; loading: boolean; error: string | null }) {
+  const grouped = useMemo(() => {
+    return fixtures.reduce<Record<string, LiveFixture[]>>((acc, fixture) => {
+      const key = fixture.league || "Futbol";
+      acc[key] = acc[key] || [];
+      acc[key].push(fixture);
+      return acc;
+    }, {});
+  }, [fixtures]);
+  const groups = Object.entries(grouped);
+  const liveCount = fixtures.filter((fixture) => /live|canli|1st|2nd|devre|playing/i.test(fixture.status)).length;
+  const dateTabs = buildDateTabs();
+
+  return (
+    <div className="matches-hub page-flow">
+      <section className="matches-mobile-head">
+        <div className="matches-brand-row">
+          <h1>Maçlar</h1>
+          <span className="live-pill">
+            <span />
+            {liveCount ? `${liveCount} CANLI` : "CANLI"}
+          </span>
+        </div>
+        <div className="match-date-tabs" aria-label="Mac tarihleri">
+          {dateTabs.map((tab) => (
+            <button className={tab.active ? "active" : ""} type="button" key={tab.label}>
+              <span>{tab.label}</span>
+              <strong>{tab.day}</strong>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="match-spotlight pitch-card">
+        <div>
+          <span className="kicker">CANLI FIKSTUR</span>
+          <h2>{liveCount ? `${liveCount} mac oynaniyor` : "Bugunun mac akisi"}</h2>
+          <p>Canli skor, baslama saati ve lig gruplari tek ekranda.</p>
+        </div>
+        <div className="spotlight-score">
+          <strong>{fixtures.length}</strong>
+          <span>mac</span>
+        </div>
+      </section>
+
+      {loading ? (
+        <section className="match-league-card pitch-card">
+          <SkeletonRow />
+          <SkeletonRow />
+          <SkeletonRow />
+        </section>
+      ) : error ? (
+        <section className="match-league-card pitch-card">
+          <EmptyPanel title="Canli fikstur alinamadi" body={error} />
+        </section>
+      ) : groups.length ? (
+        groups.map(([league, matches]) => (
+          <section className="match-league-card pitch-card" key={league}>
+            <div className="match-league-head">
+              <span>
+                <Globe2 size={18} />
+                {league}
+              </span>
+              <b>{matches.length}</b>
+            </div>
+            <div className="fixture-list">
+              {matches.map((fixture) => (
+                <FixtureRow fixture={fixture} key={fixture.id} />
+              ))}
+            </div>
+          </section>
+        ))
+      ) : (
+        <section className="match-league-card pitch-card">
+          <EmptyPanel title="Bugun mac yok" body="Canli kaynak su anda mac kaydi dondurmedi." />
+        </section>
+      )}
+    </div>
+  );
+}
+
+function FixtureRow({ fixture }: { fixture: LiveFixture }) {
+  const hasScore = fixture.homeScore !== null || fixture.awayScore !== null;
+
+  return (
+    <article className="fixture-row">
+      <span className={isLiveStatus(fixture.status) ? "fixture-status live" : "fixture-status"}>
+        {isLiveStatus(fixture.status) ? fixture.minute || "LIVE" : fixture.startTime}
+      </span>
+      <div className="fixture-team home">
+        <strong>{fixture.homeTeam}</strong>
+        <TeamMark logo={fixture.homeLogo} name={fixture.homeTeam} />
+      </div>
+      <div className="fixture-score">
+        {hasScore ? (
+          <strong>{fixture.homeScore ?? 0} - {fixture.awayScore ?? 0}</strong>
+        ) : (
+          <strong>{fixture.startTime}</strong>
+        )}
+        <span>{fixture.status}</span>
+      </div>
+      <div className="fixture-team away">
+        <TeamMark logo={fixture.awayLogo} name={fixture.awayTeam} />
+        <strong>{fixture.awayTeam}</strong>
+      </div>
+    </article>
+  );
+}
+
+function TeamMark({ logo, name }: { logo: string | null; name: string }) {
+  return logo ? <img className="team-mark" src={logo} alt="" loading="lazy" /> : <span className="team-mark fallback">{teamInitials(name)}</span>;
+}
+
+function teamInitials(value: string) {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toLocaleUpperCase("tr"))
+    .join("");
+}
+
+function buildDateTabs() {
+  const formatter = new Intl.DateTimeFormat("tr-TR", { weekday: "short" });
+  const dayFormatter = new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short" });
+  return [-2, -1, 0, 1, 2].map((offset) => {
+    const date = new Date();
+    date.setDate(date.getDate() + offset);
+    return {
+      label: offset === -1 ? "Dun" : offset === 0 ? "Bugun" : offset === 1 ? "Yarin" : formatter.format(date),
+      day: dayFormatter.format(date),
+      active: offset === 0
+    };
+  });
+}
+
+function isLiveStatus(status: string) {
+  return /live|canli|1st|2nd|devre|playing|inprogress/i.test(status);
 }
 
 function NewsHub({ news, loading }: { news: NewsCard[]; loading: boolean }) {
@@ -883,7 +1102,7 @@ function PlayerPoolWorkspace({
   rumors: Rumor[];
 }) {
   const [poolQuery, setPoolQuery] = useState("");
-  const [poolLeague, setPoolLeague] = useState(leagueCatalog[0].id);
+  const [poolLeague, setPoolLeague] = useState("ALL");
   const [poolCountry, setPoolCountry] = useState("ALL");
   const [poolTeam, setPoolTeam] = useState("ALL");
   const [poolPosition, setPoolPosition] = useState("ALL");
@@ -893,8 +1112,14 @@ function PlayerPoolWorkspace({
   const [poolLoading, setPoolLoading] = useState(false);
   const [poolError, setPoolError] = useState<string | null>(null);
 
-  const league = leagueCatalog.find((item) => item.id === poolLeague) || leagueCatalog[0];
-  const teams = fullLeagueTeams[league.id] || leagueTeams[league.id] || [];
+  const league = leagueCatalog.find((item) => item.id === poolLeague) || {
+    id: "ALL",
+    name: "Dunya Havuzu",
+    country: "Global",
+    value: "",
+    folder: ""
+  };
+  const teams = poolLeague === "ALL" ? [] : fullLeagueTeams[league.id] || leagueTeams[league.id] || [];
   const [ageMin, ageMax] = ageBandToRange(ageBand);
 
   useEffect(() => {
@@ -910,7 +1135,7 @@ function PlayerPoolWorkspace({
       setPoolError(null);
 
       const params = new URLSearchParams({
-        limit: "120",
+        limit: "900",
         league: poolLeague,
         country: poolCountry,
         team: poolTeam,
@@ -990,6 +1215,7 @@ function PlayerPoolWorkspace({
         <label>
           <span>Lig</span>
           <select value={poolLeague} onChange={(event) => setPoolLeague(event.target.value)}>
+            <option value="ALL">Dunya havuzu</option>
             {leagueCatalog.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.name}
@@ -1127,7 +1353,10 @@ function ProfileWorkspace({
   setCompareB,
   rumors,
   loading,
-  news
+  news,
+  selectedTeam,
+  selectedLeague,
+  squadError
 }: {
   players: PlayerProfile[];
   allPlayers: PlayerProfile[];
@@ -1144,22 +1373,29 @@ function ProfileWorkspace({
   rumors: Rumor[];
   loading: boolean;
   news: NewsCard[];
+  selectedTeam: string;
+  selectedLeague: string;
+  squadError: string | null;
 }) {
   return (
-    <div className="profile-layout">
+    <div className="profile-layout squad-workspace">
       <aside className="roster-dock pitch-card">
         <div className="panel-title">
           <div>
-            <span className="kicker">OYUNCU HAVUZU</span>
-            <h2>{players.length} kayit</h2>
+            <span className="kicker">KADRO MERKEZI</span>
+            <h2>{selectedTeam}</h2>
+            <p>{selectedLeague} / {players.length} oyuncu</p>
           </div>
           <Filter size={18} />
         </div>
         <Segmented value={position} onChange={setPosition} />
         <div className="roster-list">
-          {loading
-            ? Array.from({ length: 7 }, (_, index) => <SkeletonRow key={index} />)
-            : players.map((player) => (
+          {loading ? (
+            Array.from({ length: 7 }, (_, index) => <SkeletonRow key={index} />)
+          ) : squadError ? (
+            <EmptyPanel title="Kadro alinamadi" body={squadError} />
+          ) : players.length ? (
+            players.map((player) => (
                 <button className={selectedPlayer?.id === player.id ? "active" : ""} key={player.id} type="button" onClick={() => setSelectedId(player.id)}>
                   <PlayerAvatar player={player} size="sm" />
                   <span>
@@ -1168,7 +1404,10 @@ function ProfileWorkspace({
                   </span>
                   <b>{player.marketValueLabel}</b>
                 </button>
-              ))}
+              ))
+          ) : (
+            <EmptyPanel title="Kadro bos" body="Bu takim icin oyuncu kaydi henuz hazir degil." />
+          )}
         </div>
       </aside>
 
@@ -1968,7 +2207,7 @@ function ScoutCenter({
               type="button"
               onClick={() => {
                 setSelectedId(player.id);
-                setView("profile");
+                setView("squad");
               }}
             >
               <PlayerAvatar player={player} size="md" />
@@ -2237,7 +2476,7 @@ function PlayerAvatar({
   size: "sm" | "md" | "xl" | "hero" | "feature" | "lineup";
 }) {
   const searchFallback = `/api/image/player-search/${encodeURIComponent(player.name)}`;
-  const fotMobFallback = player.id > 0 ? `https://images.fotmob.com/image_resources/playerimages/${player.id}.png` : "";
+  const fotMobFallback = player.id > 0 ? `/api/image/fotmob-player/${player.id}` : "";
   const [src, setSrc] = useState(player.imageUrl);
   const [fallbackStep, setFallbackStep] = useState(0);
   const [failed, setFailed] = useState(false);

@@ -1,4 +1,4 @@
-type SupabaseCacheRecord<T> = {
+export type SupabaseCacheRecord<T> = {
   cache_key: string;
   team_name?: string;
   country_name?: string;
