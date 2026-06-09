@@ -8,7 +8,6 @@ import {
   tacticalRoleKey,
   type TacticalSlot
 } from "@/lib/football/eafc-reference";
-import { buildPlayerStats, type RecentMatch } from "@/lib/football/player-stats";
 import type { GalatasarayPayload, PlayerProfile, Rumor, TeamEvent } from "@/lib/sofasport";
 import {
   Activity,
@@ -73,6 +72,16 @@ type LiveFixture = {
   awayScore: string | number | null;
   homeLogo: string | null;
   awayLogo: string | null;
+};
+
+type PlayerApiMatch = {
+  id: string;
+  date: string;
+  competition: string;
+  homeTeam: string;
+  awayTeam: string;
+  score: string;
+  status: string;
 };
 
 const positions = [
@@ -1547,27 +1556,43 @@ function CountryFlag({ country, code }: { country: string; code?: string }) {
 }
 
 function PlayerAnalytics({ player }: { player: PlayerProfile }) {
-  const stats = useMemo(
-    () =>
-      buildPlayerStats({
-        seed: `${player.id}:${player.slug}`,
-        position: player.position,
-        age: player.age,
-        baseRating: player.attributes.form ? player.attributes.form / 10 : null,
-        marketValue: player.marketValue,
-        teamName: player.team.name,
-        competition: player.team.tournament || "Lig"
-      }),
-    [player]
-  );
-
-  const [selectedSeason, setSelectedSeason] = useState(stats.seasons[0]?.season || "2025/26");
+  const [recentMatches, setRecentMatches] = useState<PlayerApiMatch[]>([]);
+  const [matchesLoading, setMatchesLoading] = useState(false);
+  const [matchesError, setMatchesError] = useState<string | null>(null);
 
   useEffect(() => {
-    setSelectedSeason(stats.seasons[0]?.season || "2025/26");
-  }, [stats]);
+    const controller = new AbortController();
+    setRecentMatches([]);
+    setMatchesError(null);
 
-  const activeSeason = stats.seasons.find((season) => season.season === selectedSeason) || stats.seasons[0];
+    if (!player.id || player.id < 0) {
+      return () => controller.abort();
+    }
+
+    setMatchesLoading(true);
+    fetch(`/api/football/player-last-matches?playerId=${encodeURIComponent(String(player.id))}`, {
+      signal: controller.signal
+    })
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || "Son mac bilgisi alinamadi.");
+        return payload as { matches: PlayerApiMatch[]; error?: string };
+      })
+      .then((payload) => {
+        setRecentMatches(payload.matches || []);
+        setMatchesError(payload.error || null);
+      })
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setRecentMatches([]);
+        setMatchesError(error instanceof Error ? error.message : "Son mac bilgisi alinamadi.");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setMatchesLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [player.id]);
 
   const metrics = [
     { label: "Hucum", value: player.attributes.attack },
@@ -1583,7 +1608,6 @@ function PlayerAnalytics({ player }: { player: PlayerProfile }) {
         <MiniStat label="YAS" value={player.age ? String(player.age) : "-"} sub="Sezon profili" />
         <MiniStat label="BOY" value={player.height ? `${player.height} cm` : "-"} sub={player.detailedPosition} />
         <MiniStat label="TERCIH AYAK" value={player.preferredFoot} sub="Ayak tercihi" />
-        <MiniStat label="SEZON RATING" value={`${stats.seasonRating.toFixed(1)}/10`} sub="Son sezon ort." />
       </div>
 
       <div className="pitch-position-card pitch-card">
@@ -1599,49 +1623,27 @@ function PlayerAnalytics({ player }: { player: PlayerProfile }) {
         <Radar metrics={metrics.map((metric) => metric.value)} />
       </div>
 
-      <div className="metric-card pitch-card">
-        <h3>Detayli Metrikler</h3>
-        {stats.detailedMetrics.map((metric) => (
-          <DetailedMetricBar key={metric.label} label={metric.label} value={metric.value} raw={metric.raw} />
-        ))}
-      </div>
-
-      <div className="season-table pitch-card">
-        <div className="table-head">
-          <h3>Sezon Istatistikleri</h3>
-          <select
-            className="season-select"
-            value={selectedSeason}
-            onChange={(event) => setSelectedSeason(event.target.value)}
-          >
-            {stats.seasons.map((season) => (
-              <option key={season.season} value={season.season}>
-                {season.season}
-              </option>
-            ))}
-          </select>
-        </div>
-        {activeSeason ? (
-          <div className="season-summary">
-            <SeasonStatTile label="Maç" value={String(activeSeason.appearances)} />
-            <SeasonStatTile label="Gol" value={String(activeSeason.goals)} />
-            <SeasonStatTile label="Asist" value={String(activeSeason.assists)} />
-            <SeasonStatTile label="Dakika" value={activeSeason.minutes.toLocaleString("tr-TR")} />
-            <SeasonStatTile label="Rating" value={`${activeSeason.rating.toFixed(1)}/10`} highlight />
-          </div>
-        ) : null}
-      </div>
-
       <div className="recent-matches pitch-card">
         <div className="table-head">
           <h3>Son Oynadığı Maçlar</h3>
-          <span>Ortalama {stats.seasonRating.toFixed(1)}/10</span>
+          <span>SofaScore API</span>
         </div>
-        <div className="match-list">
-          {stats.recentMatches.map((match) => (
-            <RecentMatchRow key={match.id} match={match} />
-          ))}
-        </div>
+        {matchesLoading ? (
+          <div className="match-list">
+            <SkeletonRow />
+            <SkeletonRow />
+          </div>
+        ) : matchesError ? (
+          <EmptyPanel title="Son mac bilgisi alinamadi" body={matchesError} />
+        ) : recentMatches.length ? (
+          <div className="match-list">
+            {recentMatches.map((match) => (
+              <RecentMatchRow key={match.id} match={match} />
+            ))}
+          </div>
+        ) : (
+          <EmptyPanel title="Son mac bilgisi yok" body="API bu oyuncu icin son oynadigi mac kaydi dondurmedi." />
+        )}
       </div>
     </div>
   );
@@ -1686,37 +1688,18 @@ function PitchPosition({ position, detailed }: { position: string; detailed: str
   );
 }
 
-function SeasonStatTile({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
-  return (
-    <div className={highlight ? "season-stat-tile highlight" : "season-stat-tile"}>
-      <strong>{value}</strong>
-      <span>{label}</span>
-    </div>
-  );
-}
-
-function RecentMatchRow({ match }: { match: RecentMatch }) {
+function RecentMatchRow({ match }: { match: PlayerApiMatch }) {
   return (
     <div className="match-row">
-      <span className={`match-result ${match.result === "G" ? "win" : match.result === "M" ? "loss" : "draw"}`}>
-        {match.result}
-      </span>
+      <span className="match-result draw">{match.status.slice(0, 2).toLocaleUpperCase("tr")}</span>
       <div className="match-info">
         <strong>
-          {match.homeAway === "H" ? "vs" : "@"} {match.opponent}
+          {match.homeTeam} - {match.awayTeam}
         </strong>
         <em>
           {match.competition} / {match.date} / {match.score}
         </em>
       </div>
-      <div className="match-contrib">
-        {match.goals ? <span>{match.goals}G</span> : null}
-        {match.assists ? <span>{match.assists}A</span> : null}
-        <span>{match.minutes}'</span>
-      </div>
-      <span className={`match-rating ${match.rating >= 7 ? "good" : match.rating >= 6 ? "mid" : "low"}`}>
-        {match.rating.toFixed(1)}
-      </span>
     </div>
   );
 }
@@ -1744,12 +1727,10 @@ function PlayerNews({ player, news }: { player: PlayerProfile; news: NewsCard[] 
   }, [player]);
 
   const related = useMemo(() => {
-    const matched = news.filter((item) => {
+    return news.filter((item) => {
       const haystack = normalize(`${item.title} ${item.summary}`);
       return tokens.some((token) => haystack.includes(token));
-    });
-    // Oyuncuya ozel haber yoksa genel akistan goster.
-    return (matched.length ? matched : news).slice(0, 6);
+    }).slice(0, 6);
   }, [news, tokens]);
 
   return (
@@ -1781,7 +1762,7 @@ function PlayerNews({ player, news }: { player: PlayerProfile; news: NewsCard[] 
           ))}
         </div>
       ) : (
-        <p className="player-news-empty">Bu oyuncu için güncel haber akışı bekleniyor.</p>
+        <EmptyPanel title="Oyuncu haberi yok" body="API haber akisi bu oyuncuyla eslesen kayit dondurmedi." />
       )}
     </section>
   );
@@ -2360,35 +2341,31 @@ function TransferHistory({ player }: { player: PlayerProfile | null }) {
   return (
     <section className="pitch-card timeline-card">
       <h3>Transfer Gecmisi</h3>
-      <div>
-        <span />
-        <strong>{player?.team.name || "Galatasaray"}</strong>
-        <em>{player?.marketValueLabel || "-"} / Guncel</em>
-      </div>
-      <div>
-        <span />
-        <strong>Scout izleme</strong>
-        <em>Canli profil sinyalleri</em>
-      </div>
+      <EmptyPanel
+        title="Transfer gecmisi yok"
+        body={player ? "API bu oyuncu icin transfer gecmisi kaydi dondurmedi." : "Oyuncu secilmedi."}
+      />
     </section>
   );
 }
 
 function RelatedRumors({ rumors, selectedPlayer }: { rumors: Rumor[]; selectedPlayer: PlayerProfile | null }) {
-  const selected = selectedPlayer
-    ? [...rumors.filter((rumor) => rumor.playerId === selectedPlayer.id), ...rumors.filter((rumor) => rumor.playerId !== selectedPlayer.id)]
-    : rumors;
+  const selected = selectedPlayer ? rumors.filter((rumor) => rumor.playerId === selectedPlayer.id) : [];
 
   return (
     <section className="pitch-card related-card">
       <h3>One Cikan Haberler</h3>
-      {selected.slice(0, 3).map((rumor) => (
-        <article key={rumor.id}>
-          <span>{rumor.type}</span>
-          <strong>{rumor.headline}</strong>
-          <p>{rumor.playerName} / {rumor.confidence}% guven</p>
-        </article>
-      ))}
+      {selected.length ? (
+        selected.slice(0, 3).map((rumor) => (
+          <article key={rumor.id}>
+            <span>{rumor.type}</span>
+            <strong>{rumor.headline}</strong>
+            <p>{rumor.playerName} / {rumor.confidence}% guven</p>
+          </article>
+        ))
+      ) : (
+        <EmptyPanel title="Oyuncu haberi yok" body="API bu oyuncuyla eslesen haber kaydi dondurmedi." />
+      )}
     </section>
   );
 }
@@ -2734,3 +2711,4 @@ function mostCommon(values: string[]) {
   for (const value of values) counts.set(value, (counts.get(value) || 0) + 1);
   return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || "-";
 }
+
