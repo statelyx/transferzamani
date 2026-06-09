@@ -29,7 +29,6 @@ import {
   Scale,
   Search,
   Settings,
-  Share2,
   Shield,
   Sparkles,
   Target,
@@ -415,7 +414,9 @@ export default function Home() {
             loading={loading || squadLoading}
             news={news}
             selectedTeam={selectedTeam}
-            selectedLeague={selectedLeague.name}
+            selectedLeague={selectedLeague}
+            setSelectedLeague={setSelectedLeague}
+            setSelectedTeam={setSelectedTeam}
             squadError={squadError}
           />
         ) : null}
@@ -1310,6 +1311,7 @@ function PlayerPoolWorkspace({
                       <strong>{player.name}</strong>
                       <em>{player.team.name} / {player.country}</em>
                     </span>
+                    <PositionBadge player={player} />
                     <b>{player.marketValueLabel}</b>
                     <i>{player.positionLabel}</i>
                     <small>{player.age ? `${player.age} yas` : "Yas yok"}</small>
@@ -1365,6 +1367,8 @@ function ProfileWorkspace({
   news,
   selectedTeam,
   selectedLeague,
+  setSelectedLeague,
+  setSelectedTeam,
   squadError
 }: {
   players: PlayerProfile[];
@@ -1383,9 +1387,13 @@ function ProfileWorkspace({
   loading: boolean;
   news: NewsCard[];
   selectedTeam: string;
-  selectedLeague: string;
+  selectedLeague: typeof leagueCatalog[number];
+  setSelectedLeague: (league: typeof leagueCatalog[number]) => void;
+  setSelectedTeam: (team: string) => void;
   squadError: string | null;
 }) {
+  const squadTeams = fullLeagueTeams[selectedLeague.id] || leagueTeams[selectedLeague.id] || [];
+
   return (
     <div className="profile-layout squad-workspace">
       <aside className="roster-dock pitch-card">
@@ -1393,9 +1401,38 @@ function ProfileWorkspace({
           <div>
             <span className="kicker">KADRO MERKEZI</span>
             <h2>{selectedTeam}</h2>
-            <p>{selectedLeague} / {players.length} oyuncu</p>
+            <p>{selectedLeague.name} / {players.length} oyuncu</p>
           </div>
           <Filter size={18} />
+        </div>
+        <div className="squad-switcher">
+          <label>
+            <span>Lig</span>
+            <select
+              value={selectedLeague.id}
+              onChange={(event) => {
+                const nextLeague = leagueCatalog.find((item) => item.id === event.target.value) || leagueCatalog[0];
+                setSelectedLeague(nextLeague);
+                setSelectedTeam(fullLeagueTeams[nextLeague.id]?.[0] || leagueTeams[nextLeague.id]?.[0] || "");
+              }}
+            >
+              {leagueCatalog.map((league) => (
+                <option key={league.id} value={league.id}>
+                  {league.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span>Takim</span>
+            <select value={selectedTeam} onChange={(event) => setSelectedTeam(event.target.value)}>
+              {squadTeams.map((team) => (
+                <option key={team} value={team}>
+                  {team}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
         <Segmented value={position} onChange={setPosition} />
         <div className="roster-list">
@@ -1411,6 +1448,7 @@ function ProfileWorkspace({
                     <strong>{player.name}</strong>
                     <em>#{player.jerseyNumber} / {player.positionLabel}</em>
                   </span>
+                  <PositionBadge player={player} />
                   <b>{player.marketValueLabel}</b>
                 </button>
               ))
@@ -1795,6 +1833,7 @@ function LineupBuilder({
   const [lineupQuery, setLineupQuery] = useState("");
   const [poolPlayers, setPoolPlayers] = useState<PlayerProfile[]>([]);
   const [remoteSearchPlayers, setRemoteSearchPlayers] = useState<PlayerProfile[]>([]);
+  const [lineupPlayerCache, setLineupPlayerCache] = useState<Record<number, PlayerProfile>>({});
   const [poolLoading, setPoolLoading] = useState(false);
   const [poolError, setPoolError] = useState<string | null>(null);
   const usedIds = Object.values(lineup).filter(Boolean) as number[];
@@ -1805,14 +1844,35 @@ function LineupBuilder({
     () => mergePlayers([...poolPlayers, ...remoteSearchPlayers]),
     [poolPlayers, remoteSearchPlayers]
   );
-  const selectedSlotPlayer = allPoolPlayers.find((player) => player.id === lineup[selectedSlot]);
+
+  useEffect(() => {
+    if (!allPoolPlayers.length) return;
+
+    setLineupPlayerCache((current) => {
+      const next = { ...current };
+      for (const player of allPoolPlayers) {
+        next[player.id] = player;
+      }
+      return next;
+    });
+  }, [allPoolPlayers]);
+
+  const resolveLineupPlayer = (id: number | null | undefined) => {
+    if (!id) return null;
+    return lineupPlayerCache[id] || allPoolPlayers.find((player) => player.id === id) || null;
+  };
+
+  const selectedSlotPlayer = resolveLineupPlayer(lineup[selectedSlot]);
   const normalizedLineupQuery = normalize(lineupQuery);
   const activeLineupPlayers = useMemo(
     () =>
       Object.values(lineup)
-        .map((id) => allPoolPlayers.find((player) => player.id === id))
+        .map((id) => {
+          if (!id) return null;
+          return lineupPlayerCache[id] || allPoolPlayers.find((player) => player.id === id) || null;
+        })
         .filter(Boolean) as PlayerProfile[],
-    [allPoolPlayers, lineup]
+    [allPoolPlayers, lineup, lineupPlayerCache]
   );
   const activeSquadValue = activeLineupPlayers.reduce((sum, player) => sum + (player.marketValue || 0), 0);
   const activeBudgetDelta = budget - activeSquadValue;
@@ -1946,10 +2006,14 @@ function LineupBuilder({
     });
 
   const assignPlayerToSlot = (slotId: string, playerId: number | null) => {
+    const targetPlayer = resolveLineupPlayer(playerId);
+    if (targetPlayer) {
+      setLineupPlayerCache((current) => ({ ...current, [targetPlayer.id]: targetPlayer }));
+    }
+
     setLineup((current) => {
       const next = { ...current };
       const slotMeta = slots.find((slot) => slot.id === slotId) || selectedSlotMeta;
-      const targetPlayer = allPoolPlayers.find((player) => player.id === playerId);
 
       if (playerId && slotMeta.role === "G" && targetPlayer?.position !== "G") {
         return current;
@@ -1975,6 +2039,95 @@ function LineupBuilder({
         return acc;
       }, {})
     );
+  };
+
+  const downloadLineupImage = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1600;
+    canvas.height = 1000;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    context.fillStyle = "#062417";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    for (let index = 0; index < 12; index += 1) {
+      context.fillStyle = index % 2 === 0 ? "#0b4a29" : "#0a3a22";
+      context.fillRect(80 + index * 120, 96, 120, 808);
+    }
+
+    context.strokeStyle = "rgba(255,255,255,0.26)";
+    context.lineWidth = 3;
+    context.strokeRect(80, 96, 1440, 808);
+    context.beginPath();
+    context.moveTo(80, 500);
+    context.lineTo(1520, 500);
+    context.stroke();
+    context.beginPath();
+    context.arc(800, 500, 95, 0, Math.PI * 2);
+    context.stroke();
+    context.strokeRect(560, 96, 480, 190);
+    context.strokeRect(560, 714, 480, 190);
+
+    context.fillStyle = "#ffffff";
+    context.font = "800 44px Arial";
+    context.fillText("Hayalimdeki Ilk 11", 80, 62);
+    context.fillStyle = "#54e98a";
+    context.font = "800 28px Arial";
+    context.fillText(`${formationName}  |  ${formatMoney(activeSquadValue)}`, 1040, 62);
+
+    const drawRoundedRect = (x: number, y: number, width: number, height: number, radius: number) => {
+      context.beginPath();
+      context.moveTo(x + radius, y);
+      context.lineTo(x + width - radius, y);
+      context.quadraticCurveTo(x + width, y, x + width, y + radius);
+      context.lineTo(x + width, y + height - radius);
+      context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      context.lineTo(x + radius, y + height);
+      context.quadraticCurveTo(x, y + height, x, y + height - radius);
+      context.lineTo(x, y + radius);
+      context.quadraticCurveTo(x, y, x + radius, y);
+      context.closePath();
+    };
+
+    slots.forEach((slot) => {
+      const player = resolveLineupPlayer(lineup[slot.id]);
+      const centerX = 80 + (slot.left / 100) * 1440;
+      const centerY = 96 + (slot.top / 100) * 808;
+      const cardX = centerX - 92;
+      const cardY = centerY - 60;
+
+      drawRoundedRect(cardX, cardY, 184, 120, 18);
+      context.fillStyle = player ? "rgba(6,18,14,0.92)" : "rgba(6,18,14,0.62)";
+      context.fill();
+      context.strokeStyle = player ? "#54e98a" : "rgba(255,255,255,0.24)";
+      context.lineWidth = 3;
+      context.stroke();
+
+      context.fillStyle = player ? "#54e98a" : "#b9c9bf";
+      context.font = "900 24px Arial";
+      context.textAlign = "center";
+      context.fillText(player ? String(player.metrics.future) : slot.label, centerX, cardY + 33);
+
+      context.fillStyle = "#ffffff";
+      context.font = "800 24px Arial";
+      const displayName = player ? player.name : "Bos slot";
+      context.fillText(displayName.length > 14 ? `${displayName.slice(0, 13)}...` : displayName, centerX, cardY + 72);
+
+      context.fillStyle = player ? "#54e98a" : "#b9c9bf";
+      context.font = "800 20px Arial";
+      context.fillText(player ? player.marketValueLabel : slot.label, centerX, cardY + 102);
+    });
+
+    context.textAlign = "left";
+    context.fillStyle = "rgba(255,255,255,0.7)";
+    context.font = "700 20px Arial";
+    context.fillText("transferzamani.com", 80, 952);
+
+    const link = document.createElement("a");
+    link.download = `transfer-zamani-kadro-${formationName}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
   };
 
   return (
@@ -2014,7 +2167,7 @@ function LineupBuilder({
         </div>
         <div className="slots-grid">
           {slots.map((slot) => {
-            const player = allPoolPlayers.find((item) => item.id === lineup[slot.id]);
+            const player = resolveLineupPlayer(lineup[slot.id]);
             return (
               <LineupSlot
                 key={slot.id}
@@ -2061,7 +2214,7 @@ function LineupBuilder({
           </div>
           {poolError ? <div className="lineup-pool-error">{poolError}</div> : null}
           <div className="lineup-search-results">
-            {searchablePlayers.slice(0, 18).map((player) => (
+            {searchablePlayers.slice(0, 35).map((player) => (
               <button
                 className={lineup[selectedSlot] === player.id ? "active" : ""}
                 draggable
@@ -2078,6 +2231,7 @@ function LineupBuilder({
                   <strong>{player.name}</strong>
                   <em>{player.team.name} / {player.positionLabel} / {player.country}</em>
                 </span>
+                <PositionBadge player={player} />
                 <b>
                   <span>{roleFitScore(player, selectedSlotMeta.role) ? "ONERILEN" : "SERBEST"}</span>
                   {usedIds.includes(player.id) && lineup[selectedSlot] !== player.id ? "TASI" : player.marketValueLabel}
@@ -2091,13 +2245,31 @@ function LineupBuilder({
             ) : null}
           </div>
         </div>
-        <div className="glass-panel">
+        <div className="lineup-summary-card glass-panel">
           <div className="panel-title">
             <div>
-              <span className="kicker">KADRO DEGERI</span>
-              <h2>{formatMoney(activeSquadValue)}</h2>
+              <span className="kicker">KADRO OZETI</span>
+              <h2>{activeLineupPlayers.length}/11 oyuncu</h2>
             </div>
             <CircleDollarSign size={20} />
+          </div>
+          <div className="lineup-summary-grid">
+            <div className="lineup-summary-metric wide">
+              <span>KADRO DEGERI</span>
+              <strong>{formatMoney(activeSquadValue)}</strong>
+            </div>
+            <div className="lineup-summary-metric">
+              <span>ORT. YAS</span>
+              <strong>{activeAvgAge ? activeAvgAge.toFixed(1) : "-"}</strong>
+            </div>
+            <div className="lineup-summary-metric">
+              <span>ORT. SKOR</span>
+              <strong>{activeAvgRating ? activeAvgRating.toFixed(1) : "-"}</strong>
+            </div>
+            <div className="lineup-summary-metric wide">
+              <span>POTANSIYEL</span>
+              <strong>{Math.round(activeAvgRating || 0)}/100</strong>
+            </div>
           </div>
           <div className="budget-track">
             <span style={{ width: `${Math.min((activeSquadValue / budget) * 100, 100)}%` }} />
@@ -2111,25 +2283,10 @@ function LineupBuilder({
             </div>
           ) : null}
         </div>
-        <div className="squad-stats">
-          <MiniStat label="ORT. YAS" value={activeAvgAge ? activeAvgAge.toFixed(1) : "-"} sub="Ilk 11" />
-          <MiniStat label="ORT. SKOR" value={activeAvgRating ? activeAvgRating.toFixed(1) : "-"} sub="Potansiyel" />
-          <MiniStat label="POTANSIYEL" value={`${Math.round(activeAvgRating || 0)}/100`} sub="Takim tavan" wide />
-        </div>
-        <div className="glass-panel">
-          <div className="ai-head">
-            <Sparkles size={18} />
-            <h3>AI Onerileri</h3>
-          </div>
-          <p>
-            Yuksek piyasa degerli oyuncular yerine gelecegi guclu ve kontrat riski dusuk profilleri
-            tercih ederek butce dengesini koruyabilirsiniz.
-          </p>
-        </div>
         <div className="action-stack">
-          <button type="button">
-            <Share2 size={17} />
-            Kadroyu Paylas
+          <button type="button" onClick={downloadLineupImage}>
+            <Save size={17} />
+            Kadroyu Fotoğraf Kaydet
           </button>
           <button type="button">
             <Save size={17} />
@@ -2490,6 +2647,32 @@ function PlayerAvatar({
           }}
         />
       ) : null}
+    </span>
+  );
+}
+
+function PositionBadge({
+  player
+}: {
+  player: Pick<PlayerProfile, "position" | "positionLabel" | "detailedPosition">;
+}) {
+  const detail = normalize(`${player.positionLabel} ${player.detailedPosition || ""}`);
+  let badge = { tone: "midfield", icon: "◇", label: "Oyun" };
+
+  if (player.position === "G") {
+    badge = { tone: "keeper", icon: "◉", label: "Eldiven" };
+  } else if (player.position === "D") {
+    badge = { tone: "defense", icon: "◆", label: "Kalkan" };
+  } else if (player.position === "F" && (detail.includes("wing") || detail.includes("kanat") || detail.includes("rw") || detail.includes("lw"))) {
+    badge = { tone: "wing", icon: "↯", label: "Hiz" };
+  } else if (player.position === "F") {
+    badge = { tone: "attack", icon: "◎", label: "Bitirici" };
+  }
+
+  return (
+    <span className={`position-badge ${badge.tone}`} title={badge.label}>
+      <span>{badge.icon}</span>
+      <em>{badge.label}</em>
     </span>
   );
 }

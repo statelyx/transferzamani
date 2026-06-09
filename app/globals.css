@@ -1282,7 +1282,7 @@ h3,
 
 .pool-player-card {
   display: grid;
-  grid-template-columns: 76px minmax(0, 1fr) auto;
+  grid-template-columns: 76px minmax(0, 1fr) auto auto;
   grid-template-rows: auto auto auto;
   gap: 5px 12px;
   min-width: 0;
@@ -1331,6 +1331,10 @@ h3,
   white-space: nowrap;
 }
 
+.pool-player-card .position-badge {
+  justify-self: end;
+}
+
 .pool-player-card i,
 .pool-player-card small {
   align-self: end;
@@ -1349,6 +1353,65 @@ h3,
   justify-self: end;
   background: rgba(255, 255, 255, 0.08);
   color: var(--muted);
+}
+
+.position-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 26px;
+  width: max-content;
+  max-width: 100%;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text);
+  font-size: 0.66rem;
+  font-weight: 950;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.position-badge span,
+.position-badge em {
+  display: inline-flex;
+  align-items: center;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.position-badge em {
+  margin: 0;
+  color: inherit;
+  font-size: inherit;
+  font-style: normal;
+}
+
+.position-badge.keeper {
+  border-color: rgba(92, 183, 255, 0.38);
+  color: #7fc7ff;
+}
+
+.position-badge.defense {
+  border-color: rgba(125, 211, 252, 0.34);
+  color: #a7d8ff;
+}
+
+.position-badge.midfield {
+  border-color: rgba(255, 202, 87, 0.34);
+  color: #ffca57;
+}
+
+.position-badge.wing {
+  border-color: rgba(168, 85, 247, 0.38);
+  color: #d9b4ff;
+}
+
+.position-badge.attack {
+  border-color: rgba(84, 233, 138, 0.4);
+  color: var(--primary);
 }
 
 .pool-detail {
@@ -1823,7 +1886,7 @@ h3,
 }
 
 .roster-list button {
-  grid-template-columns: 42px minmax(0, 1fr) auto;
+  grid-template-columns: 42px minmax(0, 1fr) auto auto;
   gap: 10px;
   min-height: 64px;
   padding: 9px;
@@ -1848,6 +1911,44 @@ h3,
   color: var(--primary);
   font-size: 0.8rem;
   white-space: nowrap;
+}
+
+.roster-list .position-badge {
+  justify-self: end;
+}
+
+.squad-switcher {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.squad-switcher label {
+  display: grid;
+  gap: 5px;
+}
+
+.squad-switcher span {
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.squad-switcher select {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(5, 13, 17, 0.76);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 850;
+  padding: 0 10px;
 }
 
 .profile-content {
@@ -2441,7 +2542,7 @@ td:nth-child(2) {
 
 .lineup-search-results button {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) auto;
+  grid-template-columns: 42px minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 10px;
   min-height: 58px;
@@ -2486,6 +2587,10 @@ td:nth-child(2) {
   color: var(--muted);
   font-size: 0.6rem;
   letter-spacing: 0.06em;
+}
+
+.lineup-search-results .position-badge {
+  justify-self: end;
 }
 
 .lineup-workspace {
@@ -2780,8 +2885,8 @@ td:nth-child(2) {
 
 .lineup-search-panel {
   display: flex;
-  max-height: min(520px, calc(100vh - 120px));
-  min-height: 360px;
+  max-height: min(720px, calc(100vh - 82px));
+  min-height: 520px;
   flex-direction: column;
   overflow: hidden;
 }
@@ -2891,6 +2996,46 @@ td:nth-child(2) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.lineup-summary-card {
+  display: grid;
+  gap: 12px;
+}
+
+.lineup-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.lineup-summary-metric {
+  min-width: 0;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.lineup-summary-metric.wide {
+  grid-column: 1 / -1;
+}
+
+.lineup-summary-metric span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+}
+
+.lineup-summary-metric strong {
+  display: block;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 1.35rem;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ai-head {
@@ -3439,9 +3584,33 @@ td:nth-child(2) {
     grid-template-columns: 62px minmax(0, 1fr);
   }
 
+  .pool-player-card .avatar {
+    grid-row: 1 / span 5;
+  }
+
+  .pool-player-card .position-badge,
   .pool-player-card b,
+  .pool-player-card i,
   .pool-player-card small {
+    grid-column: 2;
     justify-self: start;
+  }
+
+  .roster-list button,
+  .lineup-search-results button {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .roster-list .position-badge,
+  .roster-list b,
+  .lineup-search-results .position-badge,
+  .lineup-search-results b {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .squad-switcher {
+    grid-template-columns: 1fr;
   }
 
   .pulse-board,
