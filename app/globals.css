@@ -1435,12 +1435,12 @@ h3,
 
 .pool-player-card {
   display: grid;
-  grid-template-columns: 76px minmax(0, 1fr) auto auto;
-  grid-template-rows: auto auto auto;
-  gap: 5px 12px;
+  grid-template-columns: 82px minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto auto;
+  gap: 6px 12px;
   min-width: 0;
-  min-height: 116px;
-  padding: 12px;
+  min-height: 160px;
+  padding: 14px 12px 12px 16px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: rgba(35, 43, 49, 0.55);
@@ -1455,19 +1455,20 @@ h3,
 }
 
 .pool-player-card .avatar {
-  grid-row: 1 / span 3;
+  grid-row: 1 / span 4;
 }
 
 .pool-player-card strong,
 .pool-player-card em {
   display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow: visible;
+  white-space: normal;
 }
 
 .pool-player-card strong {
-  font-size: 0.96rem;
+  font-size: 1rem;
+  line-height: 1.18;
+  overflow-wrap: anywhere;
 }
 
 .pool-player-card em {
@@ -1475,9 +1476,12 @@ h3,
   color: var(--muted);
   font-size: 0.76rem;
   font-style: normal;
+  line-height: 1.25;
 }
 
 .pool-player-card b {
+  grid-column: 3;
+  grid-row: 1;
   justify-self: end;
   color: var(--primary);
   font-size: 0.86rem;
@@ -1485,11 +1489,14 @@ h3,
 }
 
 .pool-player-card .position-badge {
+  grid-column: 3;
+  grid-row: 2;
   justify-self: end;
 }
 
 .pool-player-card i,
 .pool-player-card small {
+  grid-column: 2 / -1;
   align-self: end;
   width: max-content;
   padding: 4px 7px;
@@ -1894,6 +1901,9 @@ h3,
 .scout-card h3 {
   margin-bottom: 3px;
   color: var(--text);
+  line-height: 1.16;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .rumor-feature p,
@@ -1902,6 +1912,7 @@ h3,
   margin-bottom: 0;
   color: var(--muted);
   line-height: 1.45;
+  white-space: normal;
 }
 
 .rumor-route {
@@ -2035,9 +2046,13 @@ h3,
 .roster-list strong,
 .roster-list em {
   display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow: visible;
+  white-space: normal;
+}
+
+.roster-list strong {
+  line-height: 1.18;
+  overflow-wrap: anywhere;
 }
 
 .roster-list em {
@@ -2703,9 +2718,13 @@ td:nth-child(2) {
 .lineup-search-results strong,
 .lineup-search-results em {
   display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow: visible;
+  white-space: normal;
+}
+
+.lineup-search-results strong {
+  line-height: 1.18;
+  overflow-wrap: anywhere;
 }
 
 .lineup-search-results em {
