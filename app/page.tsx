@@ -355,18 +355,16 @@ export default function Home() {
 
   return (
     <div className="transfer-shell">
-      <SideNav view={view} setView={setView} />
+      <AppHeader
+        view={view}
+        setView={setView}
+        query={query}
+        setQuery={setQuery}
+        loading={loading}
+        onRefresh={loadData}
+      />
       <main className="transfer-main">
-        <TopNav
-          query={query}
-          setQuery={setQuery}
-          loading={loading}
-          data={data}
-          onRefresh={loadData}
-        />
-
         {error ? <ErrorState message={error} onRetry={loadData} /> : null}
-        {data && data.status.mode !== "live" ? <DataNotice status={data.status} /> : null}
 
         {view === "matches" ? (
           <MatchesHub fixtures={fixtures} loading={fixturesLoading} error={fixturesError} />
@@ -460,8 +458,76 @@ export default function Home() {
 
         {view === "news" ? <NewsHub news={news} loading={loading} /> : null}
       </main>
-      <MobileNav view={view} setView={setView} />
     </div>
+  );
+}
+
+function AppHeader({
+  view,
+  setView,
+  query,
+  setQuery,
+  loading,
+  onRefresh
+}: {
+  view: ViewKey;
+  setView: (view: ViewKey) => void;
+  query: string;
+  setQuery: (value: string) => void;
+  loading: boolean;
+  onRefresh: () => void;
+}) {
+  return (
+    <header className="app-header">
+      <div className="app-header-main">
+        <div className="brand-lockup">
+          <div className="brand-icon">
+            <img src="/transfer-zamani-logo.png" alt="" />
+          </div>
+          <div>
+            <strong>Transfer Zamani</strong>
+            <span>transferzamani.com</span>
+          </div>
+        </div>
+
+        <label className="global-search">
+          <Search size={18} />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Futbolcu, takim veya ulke ara..."
+            type="search"
+          />
+        </label>
+
+        <div className="top-actions">
+          <button className="icon-btn" type="button" onClick={onRefresh} aria-label="Veriyi yenile">
+            <RefreshCw className={loading ? "spin" : ""} size={18} />
+          </button>
+          <button className="icon-btn" type="button" aria-label="Bildirimler">
+            <Bell size={18} />
+          </button>
+          <button className="icon-btn" type="button" aria-label="Favoriler">
+            <Heart size={18} />
+          </button>
+        </div>
+      </div>
+
+      <nav className="horizontal-nav" aria-label="Ana menu">
+        {navItems.map((item) => (
+          <button
+            aria-label={item.label}
+            className={view === item.key ? "active" : ""}
+            key={item.key}
+            type="button"
+            onClick={() => setView(item.key)}
+          >
+            {item.icon}
+            <span>{item.label}</span>
+          </button>
+        ))}
+      </nav>
+    </header>
   );
 }
 
@@ -549,7 +615,7 @@ function TopNav({
       <div className="top-actions">
         <span className="live-pill">
           <span />
-          {data?.status.mode === "live" ? "CANLI VERI" : data?.status.mode === "stale" ? "STALE CACHE" : "FALLBACK"}
+          {data?.status.mode === "live" ? "CANLI" : "HAZIR"}
         </span>
         <button className="icon-btn" type="button" onClick={onRefresh} aria-label="Veriyi yenile">
           <RefreshCw className={loading ? "spin" : ""} size={18} />
@@ -607,19 +673,6 @@ function HomeDashboard({
   const topPlayers = [...players].sort((a, b) => b.metrics.future - a.metrics.future).slice(0, 4);
   const [countriesOpen, setCountriesOpen] = useState(false);
   const selectedTeams = fullLeagueTeams[selectedLeague.id] || leagueTeams[selectedLeague.id] || [];
-  const portalPills = [
-    { label: "Canli futbol verisi", value: liveStatusText(data), tone: data ? "green" : "amber" },
-    { label: "Transfer duyumu", value: rumors[0]?.headline || "Yeni sinyal bekleniyor", tone: "green" },
-    {
-      label: "Haber",
-      value: data?.events.previous
-        ? `${data.events.previous.homeTeam} ${data.events.previous.score} ${data.events.previous.awayTeam}`
-        : "Mac baglami hazir",
-      tone: "neutral"
-    },
-    { label: "Haber havuzu", value: `${news.length} kaynakli haber`, tone: "neutral" }
-  ];
-
   return (
     <div className="page-flow portal-flow">
       <section className="pulse-board pitch-card">
@@ -638,14 +691,6 @@ function HomeDashboard({
               Ilk 11
             </button>
           </div>
-        </div>
-        <div className="pulse-strip">
-          {portalPills.map((pill) => (
-            <span className={`pulse-pill ${pill.tone}`} key={pill.label}>
-              <b>{pill.label}</b>
-              <em>{pill.value}</em>
-            </span>
-          ))}
         </div>
       </section>
 
@@ -870,9 +915,9 @@ function LeagueLogo({ league }: { league: string }) {
 
 function liveStatusText(data: GalatasarayPayload | null) {
   if (!data) return "Baglanti bekleniyor";
-  if (data.status.mode === "live") return "Canli API aktif";
+  if (data.status.mode === "live") return "Canli veri aktif";
   if (data.status.mode === "stale") return "Cache verisi";
-  return "Fallback mod";
+  return "Hazir veri";
 }
 
 function ageBandToRange(value: string): [number, number] {
@@ -936,7 +981,7 @@ function MatchesHub({ fixtures, loading, error }: { fixtures: LiveFixture[]; loa
         </section>
       ) : error ? (
         <section className="match-league-card pitch-card">
-          <EmptyPanel title="Canli fikstur alinamadi" body={error} />
+          <EmptyPanel title="Mac akisi hazirlanamadi" body="Kisa sure sonra tekrar kontrol edin." />
         </section>
       ) : groups.length ? (
         groups.map(([league, matches]) => (
@@ -957,7 +1002,7 @@ function MatchesHub({ fixtures, loading, error }: { fixtures: LiveFixture[]; loa
         ))
       ) : (
         <section className="match-league-card pitch-card">
-          <EmptyPanel title="Bugun mac yok" body="Canli kaynak su anda mac kaydi dondurmedi." />
+          <EmptyPanel title="Bugun mac yok" body="Secili zaman diliminde listelenecek mac bulunmuyor." />
         </section>
       )}
     </div>
@@ -1236,7 +1281,7 @@ function PlayerPoolWorkspace({
         <div className="pool-hero-stats">
           <MiniStat label="LISTE" value={String(poolPlayers.length)} sub="Oyuncu" />
           <MiniStat label="LIG" value={league.name} sub={league.country} />
-          <MiniStat label="KAYNAK" value="API + DB" sub="Cache" />
+          <MiniStat label="KAYNAK" value="Canli + DB" sub="Cache" />
         </div>
       </section>
 
@@ -1692,7 +1737,7 @@ function PlayerAnalytics({ player }: { player: PlayerProfile }) {
       <div className="recent-matches pitch-card">
         <div className="table-head">
           <h3>Son Oynadığı Maçlar</h3>
-          <span>SofaScore API</span>
+          <span>Son performans</span>
         </div>
         {matchesLoading ? (
           <div className="match-list">
@@ -1700,7 +1745,7 @@ function PlayerAnalytics({ player }: { player: PlayerProfile }) {
             <SkeletonRow />
           </div>
         ) : matchesError ? (
-          <EmptyPanel title="Son mac bilgisi alinamadi" body={matchesError} />
+          <EmptyPanel title="Son mac bilgisi alinamadi" body="Kisa sure sonra tekrar kontrol edin." />
         ) : recentMatches.length ? (
           <div className="match-list">
             {recentMatches.map((match) => (
@@ -1708,7 +1753,7 @@ function PlayerAnalytics({ player }: { player: PlayerProfile }) {
             ))}
           </div>
         ) : (
-          <EmptyPanel title="Son mac bilgisi yok" body="API bu oyuncu icin son oynadigi mac kaydi dondurmedi." />
+          <EmptyPanel title="Son mac bilgisi yok" body="Bu oyuncu icin son mac kaydi bulunmuyor." />
         )}
       </div>
     </div>
@@ -1829,7 +1874,7 @@ function PlayerNews({ player, news }: { player: PlayerProfile; news: NewsCard[] 
           ))}
         </div>
       ) : (
-        <EmptyPanel title="Oyuncu haberi yok" body="API haber akisi bu oyuncuyla eslesen kayit dondurmedi." />
+        <EmptyPanel title="Oyuncu haberi yok" body="Bu oyuncuyla eslesen haber bulunmuyor." />
       )}
     </section>
   );
@@ -2552,7 +2597,7 @@ function TransferHistory({ player }: { player: PlayerProfile | null }) {
       <h3>Transfer Gecmisi</h3>
       <EmptyPanel
         title="Transfer gecmisi yok"
-        body={player ? "API bu oyuncu icin transfer gecmisi kaydi dondurmedi." : "Oyuncu secilmedi."}
+        body={player ? "Bu oyuncu icin transfer gecmisi bulunmuyor." : "Oyuncu secilmedi."}
       />
     </section>
   );
@@ -2573,7 +2618,7 @@ function RelatedRumors({ rumors, selectedPlayer }: { rumors: Rumor[]; selectedPl
           </article>
         ))
       ) : (
-        <EmptyPanel title="Oyuncu haberi yok" body="API bu oyuncuyla eslesen haber kaydi dondurmedi." />
+        <EmptyPanel title="Oyuncu haberi yok" body="Bu oyuncuyla eslesen haber bulunmuyor." />
       )}
     </section>
   );
@@ -2813,7 +2858,7 @@ function EventStrip({ title, event }: { title: string; event: TeamEvent | null }
           </div>
         </>
       ) : (
-        <p>API bu alan icin kayit dondurmedi.</p>
+        <p>Bu alan icin kayit bulunmuyor.</p>
       )}
     </article>
   );
@@ -2824,7 +2869,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
     <section className="error-state">
       <AlertCircle size={20} />
       <div>
-        <strong>API verisi alinamadi</strong>
+        <strong>Veri alinamadi</strong>
         <p>{message}</p>
       </div>
       <button type="button" onClick={onRetry}>
@@ -2840,8 +2885,8 @@ function DataNotice({ status }: { status: GalatasarayPayload["status"] }) {
     <section className="data-notice">
       <BadgeCheck size={18} />
       <div>
-        <strong>{status.mode === "stale" ? "Stale cache gosteriliyor" : "Fallback veri modu"}</strong>
-        <p>{status.message}</p>
+        <strong>{status.mode === "stale" ? "Son kayitlar gosteriliyor" : "Hazir veri modu"}</strong>
+        <p>Veriler gecici olarak hazir kayitlardan gosteriliyor.</p>
       </div>
     </section>
   );

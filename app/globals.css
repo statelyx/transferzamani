@@ -87,14 +87,94 @@ h3,
 }
 
 .transfer-shell {
-  display: flex;
+  display: block;
   min-height: 100vh;
 }
 
 .transfer-main {
-  flex: 1;
   min-width: 0;
   padding-bottom: 42px;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  border-bottom: 1px solid var(--line);
+  background: rgba(12, 20, 26, 0.94);
+  backdrop-filter: blur(14px);
+}
+
+.app-header-main {
+  display: grid;
+  grid-template-columns: minmax(190px, auto) minmax(280px, 520px) minmax(132px, auto);
+  gap: 18px;
+  align-items: center;
+  width: min(1480px, calc(100% - 64px));
+  min-height: 64px;
+  margin: 0 auto;
+}
+
+.app-header .brand-lockup {
+  margin: 0;
+  padding: 0;
+}
+
+.app-header .brand-lockup strong,
+.app-header .brand-lockup span {
+  max-width: 210px;
+  opacity: 1;
+}
+
+.horizontal-nav {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  width: min(1480px, calc(100% - 64px));
+  min-height: 52px;
+  margin: 0 auto;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(84, 233, 138, 0.55) transparent;
+}
+
+.horizontal-nav button {
+  position: relative;
+  display: grid;
+  min-width: 88px;
+  min-height: 50px;
+  place-items: center;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.horizontal-nav button::after {
+  position: absolute;
+  right: 14px;
+  bottom: 0;
+  left: 14px;
+  height: 3px;
+  border-radius: 999px 999px 0 0;
+  background: transparent;
+  content: "";
+}
+
+.horizontal-nav button:hover,
+.horizontal-nav button.active {
+  color: var(--text);
+}
+
+.horizontal-nav button.active::after {
+  background: var(--primary);
+}
+
+.horizontal-nav button svg {
+  color: var(--primary);
 }
 
 .side-nav {
@@ -3371,6 +3451,15 @@ td:nth-child(2) {
 }
 
 @media (max-width: 1260px) {
+  .app-header-main,
+  .horizontal-nav {
+    width: min(100% - 32px, 980px);
+  }
+
+  .app-header-main {
+    grid-template-columns: auto minmax(260px, 1fr) auto;
+  }
+
   .side-nav {
     flex-basis: 220px;
   }
@@ -3418,11 +3507,25 @@ td:nth-child(2) {
   }
 
   .transfer-main {
-    padding-bottom: 86px;
+    padding-bottom: 42px;
   }
 
-  .top-nav {
-    padding: 10px 16px;
+  .app-header-main {
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    width: min(100% - 28px, 760px);
+    padding: 10px 0;
+  }
+
+  .app-header .global-search {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+  }
+
+  .horizontal-nav {
+    justify-content: flex-start;
+    width: min(100% - 28px, 760px);
   }
 
   .top-actions .icon-btn:nth-of-type(2),
