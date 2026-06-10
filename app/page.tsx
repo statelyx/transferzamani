@@ -19,6 +19,9 @@ import {
   ChevronRight,
   CircleDollarSign,
   Filter,
+  Footprints,
+  Goal,
+  Hand,
   Heart,
   Home as HomeIcon,
   Globe2,
@@ -30,11 +33,13 @@ import {
   Search,
   Settings,
   Shield,
+  ShieldCheck,
   Sparkles,
   Target,
   Trophy,
   UserRound,
-  Users
+  Users,
+  Zap
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -370,7 +375,6 @@ export default function Home() {
             setView={setView}
             onSelectPlayer={(id) => {
               setSelectedId(id);
-              setView("squad");
             }}
             selectedLeague={selectedLeague}
             setSelectedLeague={setSelectedLeague}
@@ -458,7 +462,7 @@ function SideNav({ view, setView }: { view: ViewKey; setView: (view: ViewKey) =>
     <aside className="side-nav">
       <div className="brand-lockup">
         <div className="brand-icon">
-          TZ
+          <img src="/transfer-zamani-logo.png" alt="" />
         </div>
         <div>
           <strong>Transfer Zamanı</strong>
@@ -696,12 +700,11 @@ function HomeDashboard({
                 key={team}
                 onClick={() => {
                   setSelectedTeam(team);
-                  setView("squad");
                 }}
               >
                 <TeamLogo folder={selectedLeague.folder} team={team} />
                 <strong>{team}</strong>
-                <em>Kadroya gir</em>
+                <em>Sağda listele</em>
               </button>
             ))}
           </div>
@@ -741,14 +744,14 @@ function HomeDashboard({
             )}
           </div>
           <button className="squad-open" type="button" onClick={() => setView("squad")}>
-            Tam kadro ve analiz <ArrowRight size={16} />
+            Kadro merkezine git <ArrowRight size={16} />
           </button>
         </aside>
       </section>
 
       <section className="section-head">
         <div>
-          <span className="kicker">TURKCE FUTBOL GUNDEMI</span>
+          <span className="kicker">FUTBOL GUNDEMI</span>
           <h2>Kaynakli Haber Akisi</h2>
         </div>
         <button className="ghost-link" type="button" onClick={() => setView("news")}>
@@ -756,12 +759,12 @@ function HomeDashboard({
         </button>
       </section>
       <div className="news-grid">
-        {(news.length ? news : []).slice(0, 6).map((item) => (
+        {(news.length ? news : []).slice(0, 9).map((item) => (
           <a className={`news-card ${item.category}`} href={item.sourceUrl} key={item.id} rel="noreferrer" target="_blank">
-            {item.imageUrl ? <img src={item.imageUrl} alt="" /> : <span className="news-fallback">{item.category}</span>}
+            <BrandNewsMark />
             <span className="news-meta">
               <b>{item.league}</b>
-              <em>@{item.sourceAccount}</em>
+              <em>{formatNewsSource(item)}</em>
             </span>
             <strong>{item.title}</strong>
             <p>{item.summary}</p>
@@ -984,6 +987,21 @@ function TeamMark({ logo, name }: { logo: string | null; name: string }) {
   return logo ? <img className="team-mark" src={logo} alt="" loading="lazy" /> : <span className="team-mark fallback">{teamInitials(name)}</span>;
 }
 
+function BrandNewsMark() {
+  return (
+    <span className="news-brand-mark">
+      <img src="/transfer-zamani-logo.png" alt="" loading="lazy" />
+    </span>
+  );
+}
+
+function formatNewsSource(item: Pick<NewsCard, "sourceAccount" | "sourceName">) {
+  const source = item.sourceAccount || item.sourceName;
+  if (!source) return "Kaynak";
+  if (source.includes(" ") || /fotmob|fotomac|hurriyet|sabah/i.test(source)) return source;
+  return source.startsWith("@") ? source : `@${source}`;
+}
+
 function teamInitials(value: string) {
   return value
     .split(/\s+/)
@@ -1077,10 +1095,10 @@ function NewsHub({ news, loading }: { news: NewsCard[]; loading: boolean }) {
         <div className="news-feed-grid">
           {filtered.map((item) => (
             <a className={`news-card ${item.category}`} href={item.sourceUrl} key={item.id} rel="noreferrer" target="_blank">
-              {item.imageUrl ? <img src={item.imageUrl} alt="" /> : <span className="news-fallback">{item.category}</span>}
+              <BrandNewsMark />
               <span className="news-meta">
                 <b>{item.league}</b>
-                <em>@{item.sourceAccount}</em>
+                <em>{formatNewsSource(item)}</em>
               </span>
               <strong>{item.title}</strong>
               <p>{item.summary}</p>
@@ -1787,11 +1805,11 @@ function PlayerNews({ player, news }: { player: PlayerProfile; news: NewsCard[] 
               rel="noreferrer"
               target="_blank"
             >
-              {item.imageUrl ? <img src={item.imageUrl} alt="" loading="lazy" /> : <span className="news-fallback">{item.category}</span>}
+              <BrandNewsMark />
               <div>
                 <span className="news-meta">
                   <b>{item.league}</b>
-                  <em>@{item.sourceAccount}</em>
+                  <em>{formatNewsSource(item)}</em>
                 </span>
                 <strong>{item.title}</strong>
                 <p>{item.summary}</p>
@@ -2657,26 +2675,30 @@ function PositionBadge({
   player: Pick<PlayerProfile, "position" | "positionLabel" | "detailedPosition">;
 }) {
   const detail = normalize(`${player.positionLabel} ${player.detailedPosition || ""}`);
-  let badge = { tone: "midfield", icon: "◇", label: "Oyun" };
+  let badge: { tone: string; icon: React.ReactNode; label: string } = {
+    tone: "midfield",
+    icon: <Activity size={14} strokeWidth={2.6} />,
+    label: "Orta saha"
+  };
 
   if (player.position === "G") {
-    badge = { tone: "keeper", icon: "◉", label: "Eldiven" };
+    badge = { tone: "keeper", icon: <Hand size={14} strokeWidth={2.6} />, label: "Kaleci" };
   } else if (player.position === "D") {
-    badge = { tone: "defense", icon: "◆", label: "Kalkan" };
+    badge = { tone: "defense", icon: <ShieldCheck size={14} strokeWidth={2.6} />, label: "Defans" };
   } else if (player.position === "F" && (detail.includes("wing") || detail.includes("kanat") || detail.includes("rw") || detail.includes("lw"))) {
-    badge = { tone: "wing", icon: "↯", label: "Hiz" };
+    badge = { tone: "wing", icon: <Zap size={14} strokeWidth={2.7} />, label: "Kanat" };
   } else if (player.position === "F") {
-    badge = { tone: "attack", icon: "◎", label: "Bitirici" };
+    badge = { tone: "attack", icon: <Goal size={14} strokeWidth={2.6} />, label: "Forvet" };
+  } else if (detail.includes("bek") || detail.includes("back")) {
+    badge = { tone: "defense", icon: <Footprints size={14} strokeWidth={2.6} />, label: "Bek" };
   }
 
   return (
-    <span className={`position-badge ${badge.tone}`} title={badge.label}>
-      <span>{badge.icon}</span>
-      <em>{badge.label}</em>
+    <span className={`position-badge ${badge.tone}`} aria-label={badge.label} title={badge.label}>
+      {badge.icon}
     </span>
   );
 }
-
 function MetricTile({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="metric-tile">

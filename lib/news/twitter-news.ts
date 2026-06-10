@@ -257,7 +257,7 @@ function normalizeTweet(tweet: RawTweet, fallbackAccount: string): NewsCard | nu
     sourceName: tweet.name || sourceAccount,
     sourceUrl: `https://x.com/${sourceAccount}/status/${tweetId}`,
     publishedAt,
-    imageUrl: firstImage(tweet, sourceAccount)
+    imageUrl: firstImage(tweet)
   };
 }
 
@@ -310,17 +310,13 @@ function parseTwitterDate(value?: string) {
   return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
 }
 
-function firstImage(tweet: RawTweet, sourceAccount: string) {
+function firstImage(tweet: RawTweet) {
   return (
     tweet.media_url ||
     tweet.media?.[0]?.media_url_https ||
     tweet.media?.[0]?.media_url ||
     tweet.entities?.media?.[0]?.media_url_https ||
     tweet.entities?.media?.[0]?.media_url ||
-    tweet.user?.profile_image_url_https ||
-    tweet.user?.profile_image_url ||
-    tweet.profile_image_url_https ||
-    tweet.profile_image_url ||
-    `https://unavatar.io/x/${sourceAccount}`
+    null
   );
 }
