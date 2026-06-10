@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { listFotMobNews } from "@/lib/news/fotmob-news";
 import { listSiteNews } from "@/lib/news/site-news";
 import type { NewsCard } from "@/lib/news/twitter-news";
-import { listNews, refreshTwitterNews } from "@/lib/news/twitter-news";
+import { listNews, refreshTwitterNews, TURKISH_NEWS_ACCOUNTS } from "@/lib/news/twitter-news";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +11,7 @@ export async function GET() {
   const errors: Array<{ source: string; error: string }> = [];
 
   try {
-    const refreshed = await refreshTwitterNews({ limitPerAccount: 2 });
+    const refreshed = await refreshTwitterNews({ accounts: TURKISH_NEWS_ACCOUNTS.slice(0, 10), limitPerAccount: 1 });
     collected.push(...refreshed.news);
     errors.push(...refreshed.errors.map((item) => ({ source: `twitter:${item.account}`, error: item.error })));
   } catch (error) {

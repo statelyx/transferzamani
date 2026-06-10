@@ -7,14 +7,14 @@ export async function GET() {
   try {
     const fixtures = await getLiveFixtures();
     return NextResponse.json(
-      { fixtures, source: "free-live-football" },
+      { fixtures, source: "free-football-api-data" },
       { headers: { "Cache-Control": "s-maxage=30, stale-while-revalidate=120" } }
     );
   } catch (error) {
     return NextResponse.json(
       {
         fixtures: [],
-        source: "free-live-football",
+        source: "free-football-api-data",
         error: error instanceof Error ? error.message : "Canli fikstur alinamadi."
       },
       { status: 502, headers: { "Cache-Control": "s-maxage=30, stale-while-revalidate=120" } }

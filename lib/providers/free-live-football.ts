@@ -1,6 +1,9 @@
 import { rapidProviderRequest } from "./rapidapi-provider";
 
 export const FREE_LIVE_FOOTBALL_ENDPOINTS = {
+  "all-countries-new": { path: "/football-all-countries", ttl: 86_400 },
+  "top-trending-leagues": { path: "/football-top-trending-leagues", ttl: 86_400 },
+  "top-default-leagues": { path: "/football-top-default-leagues", ttl: 86_400 },
   "popular-leagues": { path: "/football-popular-leagues", ttl: 86_400 },
   "players-search": { path: "/football-players-search", ttl: 3_600 },
   "teams-search": { path: "/football-teams-search", ttl: 3_600 },
@@ -59,9 +62,9 @@ export const FREE_LIVE_FOOTBALL_ENDPOINTS = {
 export type FreeLiveFootballEndpoint = keyof typeof FREE_LIVE_FOOTBALL_ENDPOINTS;
 
 const freeLiveFootballProvider = {
-  id: "free-live-football",
-  hostEnv: "FREE_LIVE_FOOTBALL_RAPIDAPI_HOST",
-  defaultHost: "free-api-live-football-data-cheaper-version.p.rapidapi.com",
+  id: "free-football-api-data",
+  hostEnv: "FREE_FOOTBALL_API_DATA_RAPIDAPI_HOST",
+  defaultHost: "free-football-api-data.p.rapidapi.com",
   rateLimitEnv: "FREE_LIVE_FOOTBALL_RATE_LIMIT_MS",
   defaultRateLimitMs: 900,
   endpoints: FREE_LIVE_FOOTBALL_ENDPOINTS

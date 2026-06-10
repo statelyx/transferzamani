@@ -15,15 +15,12 @@ export type LiveFixture = {
 };
 
 export async function getLiveFixtures() {
-  const today = new Date().toISOString().slice(0, 10);
-  const [live, todayMatches] = await Promise.allSettled([
-    freeLiveFootballGet<unknown>("current-live", {}, { force: true }),
-    freeLiveFootballGet<unknown>("matches-by-date", { date: today })
+  const [live] = await Promise.allSettled([
+    freeLiveFootballGet<unknown>("current-live", {}, { force: true })
   ]);
 
   const fixtures = [
-    ...extractFixtures(live.status === "fulfilled" ? live.value.data : null),
-    ...extractFixtures(todayMatches.status === "fulfilled" ? todayMatches.value.data : null)
+    ...extractFixtures(live.status === "fulfilled" ? live.value.data : null)
   ];
 
   return dedupeFixtures(fixtures)

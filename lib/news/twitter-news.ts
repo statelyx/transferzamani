@@ -16,6 +16,12 @@ export type NewsCard = {
   sourceUrl: string;
   publishedAt: string;
   imageUrl: string | null;
+  metrics?: {
+    replies?: number;
+    reposts?: number;
+    likes?: number;
+    views?: number;
+  };
 };
 
 type TimelineResponse = {
@@ -31,6 +37,19 @@ type RawTweet = {
   created_at?: string;
   text?: string;
   full_text?: string;
+  favorite_count?: number | string;
+  retweet_count?: number | string;
+  reply_count?: number | string;
+  quote_count?: number | string;
+  views_count?: number | string;
+  view_count?: number | string;
+  public_metrics?: {
+    like_count?: number;
+    retweet_count?: number;
+    reply_count?: number;
+    quote_count?: number;
+    impression_count?: number;
+  };
   media_url?: string;
   profile_image_url_https?: string;
   profile_image_url?: string;
@@ -46,6 +65,45 @@ type RawTweet = {
 
 const TRACKED_ACCOUNTS = [
   "FabrizioRomano",
+  "fotomac",
+  "fanatikcomtr",
+  "beINSPORTS_TR",
+  "ntvspor",
+  "aspor",
+  "EfsaneFotospor",
+  "sozcugazetespor",
+  "superlig",
+  "st1lig",
+  "sporx",
+  "ajansspor",
+  "trtspor",
+  "iha_spor",
+  "dhaspor",
+  "sabahspor",
+  "HTSpor",
+  "Turkiye_Spor",
+  "yenisafakspor",
+  "sporarena",
+  "TFF_Org",
+  "MilliTakimlar",
+  "EnSuperLig",
+  "HG_Spor",
+  "Galatasaray",
+  "Fenerbahce",
+  "Besiktas",
+  "Trabzonspor",
+  "karagumrukfk",
+  "istanbulspor",
+  "gsaraysk",
+  "fenerhaber",
+  "TSpor",
+  "SportsDigitale",
+  "trtsporyildiz",
+  "ajanssportv_",
+  "sporxekstra_",
+  "superligyolutv",
+  "ScouTurk",
+  "TRFootballUpdat",
   "_samiyenhaber",
   "ertansuzgun",
   "xco1905",
@@ -60,6 +118,45 @@ const TRACKED_ACCOUNTS = [
 ];
 
 export const TURKISH_NEWS_ACCOUNTS = [
+  "fotomac",
+  "fanatikcomtr",
+  "beINSPORTS_TR",
+  "ntvspor",
+  "aspor",
+  "EfsaneFotospor",
+  "sozcugazetespor",
+  "superlig",
+  "st1lig",
+  "sporx",
+  "ajansspor",
+  "trtspor",
+  "iha_spor",
+  "dhaspor",
+  "sabahspor",
+  "HTSpor",
+  "Turkiye_Spor",
+  "yenisafakspor",
+  "sporarena",
+  "TFF_Org",
+  "MilliTakimlar",
+  "EnSuperLig",
+  "HG_Spor",
+  "Galatasaray",
+  "Fenerbahce",
+  "Besiktas",
+  "Trabzonspor",
+  "karagumrukfk",
+  "istanbulspor",
+  "gsaraysk",
+  "fenerhaber",
+  "TSpor",
+  "SportsDigitale",
+  "trtsporyildiz",
+  "ajanssportv_",
+  "sporxekstra_",
+  "superligyolutv",
+  "ScouTurk",
+  "TRFootballUpdat",
   "_samiyenhaber",
   "ertansuzgun",
   "xco1905",
@@ -206,7 +303,11 @@ function mapFreeApiTweet(entry: Record<string, unknown>, account: string): RawTw
     media_url: media || undefined,
     profile_image_url_https: String(
       user.profile_image_url_https || user.profile_image_url || entry.profile_image_url || ""
-    ) || undefined
+    ) || undefined,
+    favorite_count: numberish(entry.favorite_count || entry.favoriteCount || entry.likes || entry.like_count),
+    retweet_count: numberish(entry.retweet_count || entry.retweetCount || entry.retweets || entry.repost_count),
+    reply_count: numberish(entry.reply_count || entry.replyCount || entry.replies),
+    views_count: numberish(entry.views_count || entry.view_count || entry.views)
   };
 }
 
@@ -257,7 +358,8 @@ function normalizeTweet(tweet: RawTweet, fallbackAccount: string): NewsCard | nu
     sourceName: tweet.name || sourceAccount,
     sourceUrl: `https://x.com/${sourceAccount}/status/${tweetId}`,
     publishedAt,
-    imageUrl: firstImage(tweet)
+    imageUrl: firstImage(tweet),
+    metrics: tweetMetrics(tweet)
   };
 }
 
@@ -319,4 +421,25 @@ function firstImage(tweet: RawTweet) {
     tweet.entities?.media?.[0]?.media_url ||
     null
   );
+}
+
+function tweetMetrics(tweet: RawTweet) {
+  return {
+    replies: numeric(tweet.reply_count ?? tweet.public_metrics?.reply_count),
+    reposts: numeric(tweet.retweet_count ?? tweet.public_metrics?.retweet_count),
+    likes: numeric(tweet.favorite_count ?? tweet.public_metrics?.like_count),
+    views: numeric(tweet.views_count ?? tweet.view_count ?? tweet.public_metrics?.impression_count)
+  };
+}
+
+function numberish(value: unknown) {
+  const numericValue = numeric(value);
+  return numericValue || undefined;
+}
+
+function numeric(value: unknown) {
+  if (value === null || value === undefined || value === "") return 0;
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  const parsed = Number(String(value).replace(/[^\d.]/g, ""));
+  return Number.isFinite(parsed) ? parsed : 0;
 }

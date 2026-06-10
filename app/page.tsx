@@ -25,9 +25,11 @@ import {
   Heart,
   Home as HomeIcon,
   Globe2,
+  MessageCircle,
   Newspaper,
   Plus,
   RefreshCw,
+  Repeat2,
   Save,
   Scale,
   Search,
@@ -57,6 +59,12 @@ type NewsCard = {
   sourceUrl: string;
   publishedAt: string;
   imageUrl: string | null;
+  metrics?: {
+    replies?: number;
+    reposts?: number;
+    likes?: number;
+    views?: number;
+  };
 };
 
 type PlayerSearchPayload = {
@@ -768,6 +776,7 @@ function HomeDashboard({
             </span>
             <strong>{item.title}</strong>
             <p>{item.summary}</p>
+            <NewsEngagement metrics={item.metrics} />
           </a>
         ))}
       </div>
@@ -1048,10 +1057,10 @@ function NewsHub({ news, loading }: { news: NewsCard[]; loading: boolean }) {
       <section className="pitch-card news-hub-hero">
         <div>
           <span className="kicker">TRANSFER ZAMANI HABER HAVUZU</span>
-          <h1>Twitter/X, transfer kaynaklari ve futbol haberleri</h1>
+          <h1>Futbola dair her sey, en guncel haberler</h1>
           <p>
-            Fabrizio Romano, yerli transfer kaynaklari, OptaCan, FotMob ve RSS akislari tek yerde
-            toplanir; tekrar eden haberler cache uzerinden ayrilir.
+            Kulup aciklamalari, lig gundemi, transfer duyumlari ve spor medyasi tek akista toplanir;
+            tekrar eden haberler cache uzerinden ayrilir.
           </p>
         </div>
         <div className="news-hub-stats">
@@ -1102,6 +1111,7 @@ function NewsHub({ news, loading }: { news: NewsCard[]; loading: boolean }) {
               </span>
               <strong>{item.title}</strong>
               <p>{item.summary}</p>
+              <NewsEngagement metrics={item.metrics} />
             </a>
           ))}
         </div>
@@ -1813,6 +1823,7 @@ function PlayerNews({ player, news }: { player: PlayerProfile; news: NewsCard[] 
                 </span>
                 <strong>{item.title}</strong>
                 <p>{item.summary}</p>
+                <NewsEngagement metrics={item.metrics} />
               </div>
             </a>
           ))}
@@ -1821,6 +1832,29 @@ function PlayerNews({ player, news }: { player: PlayerProfile; news: NewsCard[] 
         <EmptyPanel title="Oyuncu haberi yok" body="API haber akisi bu oyuncuyla eslesen kayit dondurmedi." />
       )}
     </section>
+  );
+}
+
+function NewsEngagement({ metrics }: { metrics?: NewsCard["metrics"] }) {
+  const likes = metrics?.likes || 0;
+  const reposts = metrics?.reposts || 0;
+  const replies = metrics?.replies || 0;
+
+  return (
+    <span className="news-engagement" aria-label="Haber etkilesimi">
+      <span title="Begeni">
+        <Heart size={13} />
+        {formatCompact(likes)}
+      </span>
+      <span title="Retweet">
+        <Repeat2 size={13} />
+        {formatCompact(reposts)}
+      </span>
+      <span title="Yorum">
+        <MessageCircle size={13} />
+        {formatCompact(replies)}
+      </span>
+    </span>
   );
 }
 
